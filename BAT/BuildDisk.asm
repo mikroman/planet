@@ -1,0 +1,11 @@
+ORG &1100
+
+.CodeStart
+INCBIN "bin/Program.bin"
+.CodeEnd
+
+SAVE "PLANET2", CodeStart, CodeEnd
+PUTBASIC "!BOOT"
+PUTBASIC "PLANETO"
+PUTBASIC "PLANET1"
+PUTFILE "PLANLDR", &3000
