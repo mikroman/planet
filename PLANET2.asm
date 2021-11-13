@@ -2,10 +2,12 @@
 #import "constants.asm"
 #import "labels.asm"
 
-
 *=$1100 "Game"
+
 	jmp Boot
+
 IRQHook:	
+
 	lda #$02
 	bit $FE4D		//systemVIAInterruptFlagRegister
 	beq L_BRS_110D_1108
@@ -13,8 +15,7 @@ IRQHook:
 
 L_BRS_110D_1108:
 
-
-	jmp ($008C) 	//old IRQ
+	jmp (_irq1v) 	//old IRQ
 
 WaitVSync:
 
@@ -148,9 +149,9 @@ L_BRS_11AE_11A1:	//M $2E05
 	// .byte $BF,$11,$BF,$11,$BF,$11,$00,$00
 
 	lda AiVector,Y 
-	sta $70 
-	lda $2E06,Y 
-	sta $71 
+	sta _destptr_l 
+	lda AiVector + 1,Y 
+	sta _destptr_h 
 	jmp ($0070) 
 
 L_BRS_11BB_1194:
@@ -296,7 +297,7 @@ L_BRS_1286_1279:
 	cmp $046F,Y 
 	bcs L_BRS_12CF_128F
 	sta $046F,Y 
-	lda $2E46 
+	lda dXMinInit + LANDER
 	lsr 
 	lsr 
 	sec 
@@ -832,21 +833,21 @@ L_BRS_15D6_161D:
 	asl 
 	bmi L_BRS_161A_15DE
 	ldy pDot_l,X 
-	sty $70 
+	sty _destptr_l 
 	ldy pDot_h,X 
 	beq L_BRS_161A_15E8
-	sty $71 
+	sty _destptr_h 
 	lda Dot,X 
 	tax 
 	stx $86 
 	jsr MMBlit
 	ldx $85 
 	clc 
-	lda $70 
+	lda _destptr_l 
 	adc $02 
-	sta $70 
+	sta _destptr_l 
 	sta pDot_l,X 
-	lda $71 
+	lda _destptr_h 
 	adc $03 
 	bpl L_BRS_160A_1605
 	sec 
@@ -860,7 +861,7 @@ L_BRS_160A_1605:
 
 L_BRS_1610_160C:
 
-	sta $71 
+	sta _destptr_h 
 	sta pDot_h,X 
 	ldx $86 
 	jsr MMBlit
@@ -880,28 +881,28 @@ L_BRS_161A_15E8:
 
 MMBlit:
 
-	lda $71 
+	lda _destptr_h 
 	bne L_BRS_162B_1628
 	rts 
 
 L_BRS_162B_1628:
 
 	ldy #$00
-	lda ($70),Y 
+	lda (_destptr),Y 
 	eor imgDot,X 
-	sta ($70),Y 
-	lda $71 
-	sta $73 
-	lda $70 
-	sta $72 
+	sta (_destptr),Y 
+	lda _destptr_h 
+	sta _srcptr_h 
+	lda _destptr_l 
+	sta _srcptr_l 
 	and #$07
 	cmp #$07
 	bne L_BRS_1654_1640
 	clc 
-	lda $72 
+	lda _srcptr_l 
 	adc #$78
-	sta $72 
-	lda $73 
+	sta _srcptr_l 
+	lda _srcptr_h 
 	adc #$02
 	bpl L_BRS_1652_164D
 	sec 
@@ -909,14 +910,14 @@ L_BRS_162B_1628:
 
 L_BRS_1652_164D:
 
-	sta $73 
+	sta _srcptr_h 
 
 L_BRS_1654_1640:
 
 	iny 
-	lda ($72),Y 
+	lda (_srcptr),Y 
 	eor $2D22,X 
-	sta ($72),Y 
+	sta (_srcptr),Y 
 	rts 
 
 MMUpdate:
@@ -940,9 +941,9 @@ L_BRS_1667_1664:
 	lda #$50
 	sta $29 
 	lda pDot_l,X 
-	sta $70 
+	sta _destptr_l 
 	lda pDot_h,X 
-	sta $71 
+	sta _destptr_h 
 	lda Dot,X 
 	tax 
 	jsr MMBlit
@@ -973,9 +974,9 @@ L_BRS_1667_1664:
 	pla 
 	tax 
 	php 
-	lda $70 
+	lda _destptr_l 
 	sta pDot_l,X 
-	lda $71 
+	lda _destptr_h 
 	sta pDot_h,X 
 	lda Unit,X 
 	asl 
@@ -1047,10 +1048,10 @@ L_BRS_1705_16FC:
 	pha 
 	jsr XYToVidP
 	ldx $85 
-	lda $70 
+	lda _destptr_l 
 	sta $5A,X 
 	sta $62,X 
-	lda $71 
+	lda _destptr_h 
 	sta $5E,X 
 	sta $66,X 
 	pla 
@@ -1100,9 +1101,9 @@ L_BRS_174C_173D:
 L_BRS_175C_1757:
 
 	lda $62,X 
-	sta $70 
+	sta _destptr_l 
 	lda $66,X 
-	sta $71 
+	sta _destptr_h 
 	clc 
 	lda #$04
 	adc $88 
@@ -1131,7 +1132,7 @@ L_BRS_177F_1777:
 	sta $4E,X 
 	jsr NextPtr
 	ldy #$00
-	lda ($70),Y 
+	lda (_destptr),Y 
 	and #$C0
 	beq L_BRS_1797_178F
 	jsr LaserHit
@@ -1143,22 +1144,22 @@ L_BRS_1797_1794:
 
 	dec $87 
 	bne L_BRS_176B_1799
-	lda $70 
+	lda _destptr_l 
 	sta $62,X 
-	lda $71 
+	lda _destptr_h 
 	sta $66,X 
 	bne L_BRS_17DC_17A3
 
 EraseLaser:
 
-	lda $70 
-	sta $72 
-	lda $71 
-	sta $73 
+	lda _destptr_l 
+	sta _srcptr_l 
+	lda _destptr_h 
+	sta _srcptr_h 
 	lda $5A,X 
-	sta $70 
+	sta _destptr_l 
 	lda $5E,X 
-	sta $71 
+	sta _destptr_h 
 	lda #$00
 	sta $46,X 
 	lda $4A,X 
@@ -1170,8 +1171,8 @@ L_BRS_17BE_17D9:
 
 	inx 
 	lda imgLaser,X 
-	eor ($70),Y 
-	sta ($70),Y 
+	eor (_destptr),Y 
+	sta (_destptr),Y 
 	cpx #$50
 	bne L_BRS_17CC_17C8
 	ldx #$4F
@@ -1179,20 +1180,20 @@ L_BRS_17BE_17D9:
 L_BRS_17CC_17C8:
 
 	jsr NextPtr
-	lda $70 
-	cmp $72 
+	lda _destptr_l 
+	cmp _srcptr_l 
 	bne L_BRS_17BE_17D3
-	lda $71 
-	cmp $73 
+	lda _destptr_h 
+	cmp _srcptr_h 
 	bne L_BRS_17BE_17D9
 	rts 
 
 L_BRS_17DC_17A3:
 
 	lda $5A,X 
-	sta $70 
+	sta _destptr_l 
 	lda $5E,X 
-	sta $71 
+	sta _destptr_h 
 	clc 
 	lda #$01
 	adc $88 
@@ -1208,9 +1209,9 @@ L_BRS_17EF_17FB:
 	jsr NextPtr
 	dec $87 
 	bne L_BRS_17EF_17FB
-	lda $70 
+	lda _destptr_l 
 	sta $5A,X 
-	lda $71 
+	lda _destptr_h 
 	sta $5E,X 
 
 LaserNext:
@@ -1225,9 +1226,9 @@ L_BRS_180B_1806:
 
 LaserHit:
 
-	lda $70 
+	lda _destptr_l 
 	pha 
-	lda $71 
+	lda _destptr_h 
 	pha 
 	lda _offset_l 
 	pha 
@@ -1240,9 +1241,9 @@ LaserHit:
 	pla 
 	sta _offset_l 
 	pla 
-	sta $71 
+	sta _destptr_h 
 	pla 
-	sta $70 
+	sta _destptr_l 
 	bcs L_BRS_1833_1829
 	txa 
 	pha 
@@ -1262,8 +1263,8 @@ BlitLaser:
 	pha 
 	lda imgLaser,Y 
 	ldy #$00
-	eor ($70),Y 
-	sta ($70),Y 
+	eor (_destptr),Y 
+	sta (_destptr),Y 
 	pla 
 	cmp #$50
 	bne L_BRS_1847_1843
@@ -1276,10 +1277,10 @@ L_BRS_1847_1843:
 NextPtr:
 
 	clc 
-	lda $70 
+	lda _destptr_l 
 	adc _offset_l 
-	sta $70 
-	lda $71 
+	sta _destptr_l 
+	lda _destptr_h 
 	adc _offset_h 
 	bpl L_BRS_1857_1853
 	lda #$30
@@ -1292,7 +1293,7 @@ L_BRS_1857_1853:
 
 L_BRS_185D_1859:
 
-	sta $71 
+	sta _destptr_h 
 	rts 
 
 LZCollide:
@@ -1322,11 +1323,11 @@ L_BRS_186F_18E3:
 	and #$F8
 	sta _temp 
 	sec 
-	lda $70 
+	lda _destptr_l 
 	and #$F8
 	sbc _temp 
 	sta _offset_l 
-	lda $71 
+	lda _destptr_h 
 	sbc pSprite_h,X 
 	bpl L_BRS_1898_1893
 	clc 
@@ -1446,9 +1447,9 @@ EraseUnit:
 	cpx #$20
 	bcs L_BRS_194C_1932
 	ldy pDot_l,X 
-	sty $70 
+	sty _destptr_l 
 	ldy pDot_h,X 
-	sty $71 
+	sty _destptr_h 
 	beq L_BRS_194C_193E
 	lda #$00
 	sta pDot_h,X 
@@ -1465,9 +1466,9 @@ L_BRS_194C_193E:
 	lda Anim,X 
 	bne L_BRS_1967_1952
 	lda pSprite_l,X 
-	sta $70 
+	sta _destptr_l 
 	lda pSprite_h,X 
-	sta $71 
+	sta _destptr_h 
 	lda Unit,X 
 	and #$7F
 	tax 
@@ -1917,10 +1918,10 @@ TargetShip:
 	lda $0425 
 	sbc $0425,X 
 	jsr DistDiv64
-	sta $73 
+	sta _srcptr_h 
 	clc 
 	lda _temp_l 
-	sta $72 
+	sta _srcptr_l 
 	adc dX_l 
 	sta dX_l,Y 
 	lda _temp_h 
@@ -1930,10 +1931,10 @@ TargetShip:
 	lda $046F 
 	sbc $046F,X 
 	jsr DistDiv64
-	sta $71 
+	sta _destptr_h 
 	sta dY_h,Y 
 	lda _temp_l 
-	sta $70 
+	sta _destptr_l 
 	sta dY_l,Y 
 
 TargetLoop:
@@ -1957,8 +1958,8 @@ L_BRS_1C07_1C01:
 
 L_BRS_1C19_1C0A:
 
-	lda $72 
-	ora $73
+	lda _srcptr_l 
+	ora _srcptr_h
 	beq L_BRS_1C4B_1C1D
 	lda dX_l,Y 
 
@@ -1968,17 +1969,17 @@ ShootSpeed:
 	bcs L_BRS_1C4B_1C24
 	clc 
 	lda dX_l,Y 
-	adc $72 
+	adc _srcptr_l 
 	sta dX_l,Y 
 	lda dX_h,Y 
-	adc $73 
+	adc _srcptr_h 
 	sta dX_h,Y 
 	clc 
 	lda dY_l,Y 
-	adc $70 
+	adc _destptr_l 
 	sta dY_l,Y 
 	lda dY_h,Y 
-	adc $71 
+	adc _destptr_h 
 	sta dY_h,Y 
 	jmp TargetLoop
 
@@ -2316,7 +2317,7 @@ L_BRS_1E24_1E2E:
 XYToVidP:
 
 	lda #$00
-	sta $71 
+	sta _destptr_h 
 	cpx $28 
 	bcc L_BRS_1E7D_1E37
 	cpx $29 
@@ -2334,13 +2335,13 @@ XYToVidP:
 	ror 
 	adc $08 
 	php 
-	sta $70 
+	sta _destptr_l 
 	tya 
 	asl 
 	adc _temp 
 	plp 
 	adc $09 
-	sta $71 
+	sta _destptr_h 
 	lda #$00
 	sta _temp 
 	txa 
@@ -2350,21 +2351,21 @@ XYToVidP:
 	rol _temp 
 	asl 
 	rol _temp 
-	adc $70 
-	sta $70 
+	adc _destptr_l 
+	sta _destptr_l 
 	lda _temp 
-	adc $71 
+	adc _destptr_h 
 	bpl L_BRS_1E74_1E6F
 	sec 
 	sbc #$50
 
 L_BRS_1E74_1E6F:
 
-	sta $71 
+	sta _destptr_h 
 	pla 
 	and #$07
-	ora $70
-	sta $70 
+	ora _destptr_l
+	sta _destptr_l 
 
 L_BRS_1E7D_1E37:
 L_BRS_1E7D_1E3B:
@@ -2373,7 +2374,7 @@ L_BRS_1E7D_1E3B:
 
 XORBlit:
 
-	lda $71 
+	lda _destptr_h 
 	bne L_BRS_1E83_1E80
 	rts 
 
@@ -2381,32 +2382,32 @@ L_BRS_1E83_1E80:
 
 	lda #$00
 	sta $8A 
-	lda $75 
+	lda _imglen 
 	pha 
 	ldy #$00
 
 L_BRS_1E8C_1EF1:
 
-	lda $71 
+	lda _destptr_h 
 	pha 
-	lda $70 
+	lda _destptr_l 
 	pha 
-	lda $70 
+	lda _destptr_l 
 	and #$07
-	sta $74 
-	lda $70 
+	sta _dest_crow 
+	lda _destptr_l 
 	and #$F8
-	sta $70 
+	sta _destptr_l 
 
 L_BRS_1E9E_1EC1:
 
-	lda ($72),Y 
+	lda (_srcptr),Y 
 	php 
 	iny 
 	sty _temp 
-	ldy $74 
-	eor ($70),Y 
-	sta ($70),Y 
+	ldy _dest_crow 
+	eor (_destptr),Y 
+	sta (_destptr),Y 
 	iny 
 	plp 
 	beq L_BRS_1EB2_1EAC
@@ -2420,27 +2421,27 @@ L_BRS_1EB2_1EAC:
 
 L_BRS_1EB6_1EDD:
 
-	sty $74 
+	sty _dest_crow 
 	ldy _temp 
 	tya 
 	and $84
 	beq L_BRS_1EDF_1EBD
-	dec $75 
+	dec _imglen 
 	bne L_BRS_1E9E_1EC1
 	pla 
 	pla 
 	pla 
-	sta $75 
+	sta _imglen 
 	rts 
 
 L_BRS_1EC9_1EB4:
 
 	ldy #$00
 	clc 
-	lda $70 
+	lda _destptr_l 
 	adc #$80
-	sta $70 
-	lda $71 
+	sta _destptr_l 
+	lda _destptr_h 
 	adc #$02
 	bpl L_BRS_1EDB_1ED6
 	sec 
@@ -2448,7 +2449,7 @@ L_BRS_1EC9_1EB4:
 
 L_BRS_1EDB_1ED6:
 
-	sta $71 
+	sta _destptr_h 
 	bne L_BRS_1EB6_1EDD
 
 L_BRS_1EDF_1EBD:
@@ -2456,7 +2457,7 @@ L_BRS_1EDF_1EBD:
 	clc 
 	pla 
 	adc #$08
-	sta $70 
+	sta _destptr_l 
 	pla 
 	adc #$00
 	bpl L_BRS_1EED_1EE8
@@ -2465,11 +2466,11 @@ L_BRS_1EDF_1EBD:
 
 L_BRS_1EED_1EE8:
 
-	sta $71 
-	dec $75 
+	sta _destptr_h 
+	dec _imglen 
 	bne L_BRS_1E8C_1EF1
 	pla 
-	sta $75 
+	sta _imglen 
 	rts 
 
 ScreenStart:
@@ -2616,16 +2617,16 @@ L_BRS_1FB3_1FAD:
 	asl 
 	asl 
 	adc #$20
-	sta $72 
+	sta _srcptr_l 
 	lda #$10
-	sta $73 
+	sta _srcptr_h 
 	ldx $7E 
 	ldy $86 
 	lda SurfaceY,Y
 	tay 
 	jsr XYToVidP
 	lda #$04
-	sta $75 
+	sta _imglen 
 	lda #$07
 	sta $84 
 	jsr XORBlit
@@ -2634,12 +2635,12 @@ L_BRS_1FB3_1FAD:
 	jsr XYToVidP
 	ldy #$00
 	lda #$F0
-	eor ($70),Y 
-	sta ($70),Y 
+	eor (_destptr),Y 
+	sta (_destptr),Y 
 	iny 
 	lda #$F0
-	eor ($70),Y 
-	sta ($70),Y 
+	eor (_destptr),Y 
+	sta (_destptr),Y 
 	ldx $85 
 	ldy $86 
 	rts 
@@ -2708,9 +2709,9 @@ L_BRS_204A_2046:
 	stx $23 
 	beq L_BRS_2077_204C
 	lda pSprite_l 
-	sta $70 
+	sta _destptr_l 
 	lda pSprite_h 
-	sta $71 
+	sta _destptr_h 
 	ldx #$00
 	jsr XBLTSprite
 	lda SpriteV_l 
@@ -2930,9 +2931,9 @@ NextVidP:
 
 L_BRS_21BE_21D5:
 
-	lda $70 
+	lda _destptr_l 
 	sta pNext_l,X 
-	lda $71 
+	lda _destptr_h 
 	sta pNext_h,X 
 	lda Unit,X 
 	and #$7F
@@ -2943,7 +2944,7 @@ L_BRS_21D1_217E:
 L_BRS_21D1_218E:
 
 	lda #$00
-	sta $71 
+	sta _destptr_h 
 	beq L_BRS_21BE_21D5
 
 GetXScreen:
@@ -2995,9 +2996,9 @@ L_BRS_221C_220E:
 L_BRS_221C_2216:
 
 	lda pSprite_l,X 
-	sta $70 
+	sta _destptr_l 
 	lda pSprite_h,X 
-	sta $71 
+	sta _destptr_h 
 	lda Unit,X 
 	and #$7F
 	tax 
@@ -3006,10 +3007,10 @@ L_BRS_221C_2216:
 	tax 
 	lda pNext_l,X 
 	sta pSprite_l,X 
-	sta $70 
+	sta _destptr_l 
 	lda pNext_h,X 
 	sta pSprite_h,X 
-	sta $71 
+	sta _destptr_h 
 	txa 
 	pha 
 	jsr XORBlit
@@ -3027,14 +3028,14 @@ L_BRS_2246_221A:
 
 XBLTSprite:
 
-	lda $2D4D,X //$07,$07,$07,$03,$07,$03,$0F,$07,$03,$07,$07
+	lda SpriteMaxY,X //$07,$07,$07,$03,$07,$03,$0F,$07,$03,$07,$07
 	sta $84 
 	lda SpriteLen,X //$30,$20,$20,$14,$18,$0C,$08,$18,$02,$28,$28
-	sta $75 
+	sta _imglen 
 	lda SpriteV_l,X //$C0,$2C,$4C,$6C,$94,$AC,$A0,$A8,$B8,$BE,$CE
-	sta $72 
+	sta _srcptr_l 
 	lda SpriteV_h,X //$0F,$10,$10,$10,$10,$10,$0F,$0F,$10,$10,$10
-	sta $73 
+	sta _srcptr_h 
 	jsr XORBlit
 	cpx #$00
 	bne L_BRS_226D_2267
@@ -3361,8 +3362,8 @@ L_BRS_243E_2430:
 L_BRS_243E_2435:
 L_BRS_243E_243B:
 
-	stx $2E24 
-	lda $2E46 
+	stx Spawnc + POD
+	lda dXMinInit + LANDER
 	clc 
 	adc #$02
 	cmp #$18		//progressive difficulty
@@ -3557,17 +3558,17 @@ PrintN:
 	sty $42 
 	tax 
 	lda StringV_l,X 
-	sta $70 
+	sta _destptr_l 
 	lda StringV_h,X 
-	sta $71 
+	sta _destptr_h 
 	ldy #$00
-	lda ($70),Y 
+	lda (_destptr),Y 
 	sta $44 
 
 L_BRS_258F_2597:
 
 	iny 
-	lda ($70),Y 
+	lda (_destptr),Y 
 	jsr OSWRCH
 	cpy $44 
 	bne L_BRS_258F_2597
@@ -3588,7 +3589,7 @@ ScoreUnit:
 	tax 
 	lda Points_h,X 
 	tay 
-	lda $2D58,X 
+	lda Points_l,X 
 	tax 
 	jsr AddScore
 
@@ -3684,9 +3685,9 @@ AddScore:
 L_BRS_2635_2630:
 
 	lda $2E 
-	sta $70 
+	sta _destptr_l 
 	lda $2F 
-	sta $71 
+	sta _destptr_h 
 	lda #$00
 	sta $33 
 	ldx #$02
@@ -3740,7 +3741,7 @@ L_BRS_2680_26A8:
 	lda $33 
 	beq L_BRS_2689_2682
 	lda imgDigit,X 		//HUD numbers
-	sta ($70),Y 
+	sta (_destptr),Y 
 
 L_BRS_2689_2682:
 
@@ -3751,16 +3752,16 @@ L_BRS_2689_2682:
 	tay 
 	bne L_BRS_26A5_268F
 	clc 
-	lda $70 
+	lda _destptr_l 
 	adc #$08
-	sta $70 
+	sta _destptr_l 
 	bcc L_BRS_26A5_2698
-	inc $71 
+	inc _destptr_h 
 	bpl L_BRS_26A5_269C
-	lda $71 
+	lda _destptr_h 
 	sec 
 	sbc #$50
-	sta $71 
+	sta _destptr_h 
 
 L_BRS_26A5_268F:
 L_BRS_26A5_2698:
@@ -3784,12 +3785,12 @@ L_BRS_26B5_26B1:
 	sty _temp 
 	clc 
 	lda $2E 
-	sta $72 
+	sta _srcptr_l 
 	adc $02 
-	sta $70 
+	sta _destptr_l 
 	sta $2E 
 	lda $2F 
-	sta $73 
+	sta _srcptr_h 
 	adc _temp 
 	bpl L_BRS_26CD_26C8
 	sec 
@@ -3803,7 +3804,7 @@ L_BRS_26CD_26C8:
 
 L_BRS_26D3_26CF:
 
-	sta $71 
+	sta _destptr_h 
 	sta $2F 
 	lda #$FF
 	eor _temp 
@@ -3816,31 +3817,31 @@ L_BRS_26D3_26CF:
 	bit $2A 
 	bmi L_BRS_271B_26E8
 	clc 
-	lda $70 
+	lda _destptr_l 
 	adc #$B8
-	sta $70 
+	sta _destptr_l 
 	bcc L_BRS_26FE_26F1
-	inc $71 
+	inc _destptr_h 
 	bpl L_BRS_26FE_26F5
 	sec 
-	lda $71 
+	lda _destptr_h 
 	sbc #$50
-	sta $71 
+	sta _destptr_h 
 
 L_BRS_26FE_26F1:
 L_BRS_26FE_26F5:
 
 	clc 
-	lda $72 
+	lda _srcptr_l 
 	adc #$B8
-	sta $72 
+	sta _srcptr_l 
 	bcc L_BRS_2712_2705
-	inc $73 
+	inc _srcptr_h 
 	bpl L_BRS_2712_2709
 	sec 
-	lda $73 
+	lda _srcptr_h 
 	sbc #$50
-	sta $73 
+	sta _srcptr_h 
 
 L_BRS_2712_2705:
 L_BRS_2712_2709:
@@ -3861,16 +3862,16 @@ L_BRS_271C_2756:
 
 L_BRS_271E_2723:
 
-	lda ($72),Y 
-	sta ($70),Y 
+	lda (_srcptr),Y 
+	sta (_destptr),Y 
 	dey 
 	bpl L_BRS_271E_2723
 	clc 
-	lda $72 
+	lda _srcptr_l 
 	adc _temp_l 
-	sta $72 
+	sta _srcptr_l 
 	lda _temp_h 
-	adc $73 
+	adc _srcptr_h 
 	bpl L_BRS_2735_2730
 	sec 
 	sbc #$50
@@ -3883,13 +3884,13 @@ L_BRS_2735_2730:
 
 L_BRS_273B_2737:
 
-	sta $73 
+	sta _srcptr_h 
 	clc 
-	lda $70 
+	lda _destptr_l 
 	adc _temp_l 
-	sta $70 
+	sta _destptr_l 
 	lda _temp_h 
-	adc $71 
+	adc _destptr_h 
 	bpl L_BRS_274D_2748
 	sec 
 	sbc #$50
@@ -3902,7 +3903,7 @@ L_BRS_274D_2748:
 
 L_BRS_2753_274F:
 
-	sta $71 
+	sta _destptr_h 
 	dex 
 	bne L_BRS_271C_2756
 	rts 
@@ -3983,7 +3984,7 @@ CursorOn:
 	ldx #$00		//enable
 	jsr OSBYTE
 	ldx #$0A
-	lda #$72
+	lda #_srcptr_l
 	jmp Out6845
 
 CursorOff:
@@ -4427,13 +4428,13 @@ L_BRS_2A9F_2AD3:
 	ldx $89 
 	lda $046F,X 
 	tax 
-	lda $2C58,Y 
+	lda WarpY,Y 
 	jsr WarpCoord
 	tay 
 	pla 
 	tax 
 	jsr XYToVidP
-	lda $71 
+	lda _destptr_h 
 	beq L_BRS_2AD0_2ABE
 	ldy #$00
 	ldx $89 
@@ -4441,8 +4442,8 @@ L_BRS_2A9F_2AD3:
 	asl 
 	tax 
 	lda imgDot,X 
-	eor ($70),Y 
-	sta ($70),Y 
+	eor (_destptr),Y 
+	sta (_destptr),Y 
 
 L_BRS_2AD0_2ABE:
 
@@ -4478,7 +4479,7 @@ L_BRS_2AE0_2B19:
 	cpy #$C0
 	bcs BlastNext
 	jsr XYToVidP
-	lda $71 
+	lda _destptr_h 
 	beq BlastNext
 	ldy #$00
 	ldx $89 
@@ -4486,8 +4487,8 @@ L_BRS_2AE0_2B19:
 	asl 
 	tax 
 	lda imgDot,X 
-	eor ($70),Y 
-	sta ($70),Y 
+	eor (_destptr),Y 
+	sta (_destptr),Y 
 	jmp BlastNext
 	pla 
 
@@ -4533,8 +4534,8 @@ WarpCoord:
 	sbc #$00
 	sta _offset_h 
 	lda #$00
-	sta $72 
-	sta $73 
+	sta _srcptr_l 
+	sta _srcptr_h 
 	ldx $89 
 	lda Param,X 
 	tax 
@@ -4542,20 +4543,20 @@ WarpCoord:
 L_BRS_2B53_2B61:
 
 	clc 
-	lda $72 
+	lda _srcptr_l 
 	adc _offset_l 
-	sta $72 
-	lda $73 
+	sta _srcptr_l 
+	lda _srcptr_h 
 	adc _offset_h 
-	sta $73 
+	sta _srcptr_h 
 	dex 
 	bne L_BRS_2B53_2B61
-	lda $72 
-	lsr $73 
+	lda _srcptr_l 
+	lsr _srcptr_h 
 	ror 
-	lsr $73 
+	lsr _srcptr_h 
 	ror 
-	lsr $73 
+	lsr _srcptr_h 
 	ror 
 	clc 
 	adc $85 
@@ -4687,9 +4688,9 @@ Hook:
 
 	sei 
 	lda IRQ1V		//IRQ1V - Main interrupt vector
-	sta $8C 
+	sta _irq1v 
 	lda IRQ1V+1 
-	sta $8D 
+	sta _irq1v + 1
 	lda #<IRQHook		//New IRQ = $1103
 	sta IRQ1V 
 	lda #>IRQHook+1
@@ -4706,7 +4707,7 @@ YReset:
 
 mkScLoop:
 
-	lda $3088,Y 
+	lda DefHigh,Y 
 	sta HiScore,X 
 	inx 
 	iny 
@@ -4781,7 +4782,7 @@ TableOne:
 	.byte $09,$9C,$09,$A6,$09
 
 
-//SurfaceY $3100-$3300 these three pages get moved to SurfaceY
+//SurfaceY $3100-$3300 these three pages get moved to $0E00
 
 	.byte $22,$26,$2A,$2C,$28,$24,$20,$1C,$19,$19,$19,$19,$19,$19,$19,$19
 	.byte $19,$19,$1A,$1D,$1E,$21,$22,$25,$26,$2A,$2D,$2E,$31,$32,$36,$3A
