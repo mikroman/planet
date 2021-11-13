@@ -200,7 +200,6 @@
 .label SpriteV_l	=	$2d0b
 .label SpriteV_h	=	$2d16
 .label imgDot		=	$2d21	//[2][11]
-//imgDotR	        =	$2d37	//[2][11] R shifted
 .label SpriteMaxY	=	$2d4d
 .label Points_l	    =	$2d58
 .label Points_h	    =	$2d63
