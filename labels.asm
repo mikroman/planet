@@ -1,5 +1,3 @@
-#importonce
-
 // vi: syntax=asmM6502 ts=4 sw=4
 
 // Acornsoft Planetoid, BBC Micro
@@ -168,21 +166,21 @@
 .label Dot			=	$66b	//idx[37] spr#x2
 .label HiScore		=	$700	//hiscore_t[7] =168
 
-.label SurfaceY	    =	$e00	//[256]
-.label imgDigit	    =	$f00	//[10][16]
-.label imgMan		=	$fa0	//[8]
-.label imgShipR	    =	$fc0	//[48]
-.label imgShipL	    =	$ff0	//[48]
-.label imgSurface	=	$1020	//[3][4]
-.label imgLander	=	$102c	//[32]
-.label imgMutant	=	$104c	//[32]
-.label imgBaiter	=	$106c	//[20]
-.label imgBomber	=	$1094	//[24]
-.label imgSwarmer	=	$10ac	//[12]
-.label imgKugel	    =	$10b8	//[2]
-.label imgShrapnel	=	$10ba	//[4]
-.label img250		=	$10be	//[40]
-.label img500		=	$10ce	//[40] overlaps
+//.label SurfaceY	    =	$e00	//[256]
+//.label imgDigit	    =	$f00	//[10][16]
+//.label imgMan		=	$fa0	//[8]
+//.label imgShipR	    =	$fc0	//[48]
+//.label imgShipL	    =	$ff0	//[48]
+//.label imgSurface	=	$1020	//[3][4]
+//.label imgLander	=	$102c	//[32]
+//.label imgMutant	=	$104c	//[32]
+//.label imgBaiter	=	$106c	//[20]
+//.label imgBomber	=	$1094	//[24]
+//.label imgSwarmer	=	$10ac	//[12]
+//.label imgKugel	    =	$10b8	//[2]
+//.label imgShrapnel	=	$10ba	//[4]
+//.label img250		=	$10be	//[40]
+//.label img500		=	$10ce	//[40] overlaps
 
 //.label SurfQuad	    =	$2bc0	//[64]4x2bit packed
 //.label imgLaser	    =	$2bff	//[81]
