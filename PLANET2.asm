@@ -9,53 +9,56 @@
 IRQHook:	
 
 	lda #$02
-	bit $FE4D		//systemVIAInterruptFlagRegister
+	bit SYS6522 + 13	//systemVIAInterruptFlagRegister
 	beq L_BRS_110D_1108
+
+VsyncAddress1:
+
 	inc vsync 
 
 L_BRS_110D_1108:
 
-	jmp (_irq1v) 	//old IRQ
+	jmp (_irq1v) 		//old IRQ
 
 WaitVSync:
 
 	lda vsync 
-	cmp $1B 
+	cmp _vsync0 
 	beq WaitVSync
-	sta $1B 
+	sta _vsync0 
 	rts 
 
 IsVSync:
 
 	lda vsync 
-	cmp $1B 
+	cmp _vsync0 
 	rts 
 
 SetPallette:
 
 	pha 
-	eor #$07		//top four bits define logical colour field, bottom four bits are the physical colour EOR 7.
+	eor #%00000111		//top four bits define logical colour field, bottom four bits are the physical colour EOR 7.
 	sta ULAPALETTE		//videoULAPaletteRegister
 	pla 
 	rts 
 
 Out6845:
 
-	stx SHEILA		//crtcAddressRegister
-	sta $FE01		//crtcAddressWrite
+	stx SHEILA			//crtcAddressRegister
+	sta SHEILA + 1		//crtcAddressWrite
 	rts 
 
 StartTimer:
 
-	lda #$80		//one shot mode
-	sta $FE6B		//userVIAAuxiliaryControlRegister:
-	stx $FE64		//userVIATimer1CounterLow=#$80
-	sty $FE65		//userVIATimer1CounterHigh=#$14
+	lda #%10000000		//one shot mode
+	sta USR6522 + 11	//userVIAAuxiliaryControlRegister:
+	stx USR6522 + 4		//userVIATimer1CounterLow=#$80
+	sty USR6522 + 5		//userVIATimer1CounterHigh=#$14
 	rts 
 
 TimerState:
 
-	bit USR6522		//userVIARegisterB (input/output)
+	bit USR6522			//userVIARegisterB (input/output)
 	rts 
 
 AIBatch:
@@ -152,7 +155,7 @@ L_BRS_11AE_11A1:	//M $2E05
 	sta _destptr_l 
 	lda AiVector + 1,Y 
 	sta _destptr_h 
-	jmp ($0070) 
+	jmp (Vector70) 
 
 L_BRS_11BB_1194:
 L_BRS_11BB_1198:
@@ -1170,7 +1173,7 @@ L_BRS_17BE_17D3:
 L_BRS_17BE_17D9:
 
 	inx 
-	lda imgLaser,X 
+	lda ImgLaser,X 
 	eor (_destptr),Y 
 	sta (_destptr),Y 
 	cpx #$50
@@ -1261,7 +1264,7 @@ BlitLaser:
 	iny 
 	tya 
 	pha 
-	lda imgLaser,Y 
+	lda ImgLaser,Y 
 	ldy #$00
 	eor (_destptr),Y 
 	sta (_destptr),Y 
@@ -2201,7 +2204,7 @@ L_BRS_1D76_1D83:
 	beq L_BRS_1DA4_1D9A
 	lda $37 
 	bne L_BRS_1DA8_1D9E
-	ldx $39 
+	ldx _gameover_sp 
 	txs 
 	rts 
 
@@ -4302,8 +4305,8 @@ Main:
 Planetoid:
 
 	tsx 
-	stx $39 
-	lda #$00
+	stx _gameover_sp 
+	lda #$00		//power hum sound
 	jsr PlaySound
 	jsr InitZP
 
@@ -4597,13 +4600,16 @@ IsLinked:
 L_BRS_2B9F_2B91:
 L_BRS_2B9F_2B9A:
 
-	rts 
+	rts
 
-		//colour data?
+//$2BA0-2FEF global vars x2 (vsync,rotatec)
+//(32unused bytes)
 	.byte $00,$08,$00,$08,$00,$08,$00,$00
 	.byte $00,$00,$04,$04,$04,$08,$08,$04
 	.byte $04,$04,$04,$04,$04,$04,$04,$04
 	.byte $04,$04,$04,$04,$04,$04,$04,$04
+SurfQuad:	
+//Packed 2-bit surface tiles (256) 4/byte;Corresponds to YSurface[256]
 	.byte $2A,$00,$55,$55,$65,$66,$9A,$A9
 	.byte $00,$01,$44,$55,$55,$55,$A5,$2A
 	.byte $80,$2A,$08,$42,$55,$55,$55,$66
@@ -4611,7 +4617,9 @@ L_BRS_2B9F_2B9A:
 	.byte $41,$54,$55,$55,$55,$55,$55,$2A
 	.byte $88,$08,$50,$69,$55,$55,$55,$55
 	.byte $55,$55,$55,$55,$99,$A9,$99,$99
-	.byte $19,$50,$40,$14,$54,$55,$55,$95
+	.byte $19,$50,$40,$14,$54,$55,$55
+ImgLaser:
+	.byte $95//unused
 	.byte $00,$00,$30,$00,$20,$30,$10,$30
 	.byte $00,$30,$30,$20,$30,$30,$00,$30
 	.byte $30,$30,$30,$30,$30,$30,$30,$30
@@ -4622,67 +4630,279 @@ L_BRS_2B9F_2B9A:
 	.byte $30,$30,$30,$30,$30,$30,$30,$30
 	.byte $30,$30,$30,$30,$30,$30,$30,$30
 	.byte $30,$30,$30,$30,$30,$30,$30,$30
+WarpX:		//warp animation points
+//$2C50 x_offset_t
 	.byte $50,$50,$28,$00,$00,$00,$28,$50
+WarpY:
+//$2C50 y_offset_t
 	.byte $60,$C0,$C0,$C0,$60,$00,$00,$00
+BlastX:
+//$2C60 Blast animation point Xscr coord offsets
 	.byte $02,$04,$00,$FC,$FE,$FC,$00,$04
+BlastY:
 	.byte $00,$0C,$06,$0C,$00,$F4,$FA,$F4
+FlashPal:
+//$2C70 PAL_FLASH (flashing) colour palettes
 	.byte $45,$42,$46,$43,$47,$43,$46,$42
-//$2C78	
-	.byte $AC,$BB,$CA,$BA,$AA,$9B,$AB,$28
+HyperKeys:
+//$2C78	hyperspace keycodes
+	.byte $AC,$BB,$CA,$BA,$AA,$9B,$AB
+	.byte $28	// (unused)
 	//     G   Y   U   J   N   B   H
-//$2C80	
+ParamBlk:
+//$2C80	OSWORD parameter block, 4 signed words
 	.byte $25,$24,$20,$1D,$1C,$19,$19,$19
 
-//$2C88	
+//sound parameters
+// MSB of Channel/HSFC (first SOUND param)
+//   Hold always off
+// LSB of Channel/HSFC (first SOUND param)
+//   Flush always on
+// LSB of Amplitude (second SOUND param)
+//   [0,-15] amplitude / [1-4] envelope #
+// LSB of Pitch (third SOUND param)
+// LSB of Duration (fourth SOUND param)
+HoldSync:
+//$2C88
 	.byte $02,$02,$02,$00,$01,$01,$01,$01
 	.byte $01,$01,$01,$01,$01,$01,$00,$00
 	.byte $01,$01,$00,$00
-//$2C9C	
-	.byte $11,$12,$13,$10
-	.byte $11,$10,$11,$10,$11,$10,$11,$10
-	.byte $11,$10,$12,$12,$11,$10,$13,$12
-//$2CB0	
+FlushChan:
+//$2C9C	FlushChan
+	.byte $11,$12,$13,$10,$11,$10,$11,$10
+	.byte $11,$10,$11,$10,$11,$10,$12,$12
+	.byte $11,$10,$13,$12
+AmplEnvel:
+//$2CB0
 	.byte $F6,$F6,$F6,$00,$01,$F4,$02,$F6
 	.byte $01,$F6,$01,$F1,$01,$F1,$03,$03
 	.byte $01,$F1,$04,$03
-//$2CC4	
-	.byte $00,$00,$00,$00
-	.byte $E6,$07,$64,$07,$FF,$07,$B4,$07
-	.byte $82,$07,$32,$14,$FF,$03,$00,$AA
-//$2CD8	
+Pitch:
+//$2CC4
+	.byte $00,$00,$00,$00,$E6,$07,$64,$07
+	.byte $FF,$07,$B4,$07,$82,$07,$32,$14
+	.byte $FF,$03,$00,$AA
+Duration:
+//$2CD8
 	.byte $32,$32,$32,$00,$FF,$1E,$FF,$0C
 	.byte $FF,$02,$FF,$11,$FF,$28,$08,$08
 	.byte $FF,$3C,$23,$08
-//$2CEC	
-	.byte $28,$25,$25,$24
-	.byte $20,$1D,$1D,$1D,$1D,$1D,$1D,$1D
-	.byte $1D,$1D,$1D,$1D,$1D,$1D,$1D,$1E
-//$2D00
-.import binary "2D00.bin"
+//$2CEC	unused
+	.byte $28,$25,$25,$24,$20,$1D,$1D,$1D
+	.byte $1D,$1D,$1D,$1D,$1D,$1D,$1D,$1D
+	.byte $1D,$1D,$1D,$1E
+
+SpriteLen:
+//$2D00,X	Sprite data lengths
+	.byte $30,$20,$20,$14,$18,$0C,$08,$18
+	.byte $02,$28,$28
+SpriteV_l:
+//$2D0B,X	LB of vectors to sprite data
+	.byte $C0,$2C,$4C,$6C,$94,$AC,$A0,$A8
+	.byte $B8,$BE,$CE
+SpriteV_h:
+//$2D16,X	HB of vectors to sprite data
+	.byte $0F,$10,$10,$10,$10,$10,$0F,$0F
+	.byte $10,$10,$10
+imgDot:
+//$2D21,X	Minimap dots (2x2px) for each sprite #
+	.byte $FF,$FF,$8A,$88,$A2,$88,$88,$88
+	.byte $A2,$A2,$82,$8A,$A8,$A8,$20,$20
+	.byte $00,$D8,$00,$00,$00,$FF
+//imgDotR:
+//2D37		imgDot[] dots, >> 1 pixel to the right
+	.byte $FF,$FF,$45,$44,$51,$44,$44,$44
+	.byte $51,$51,$41,$45,$54,$54,$10,$10
+	.byte $00,$6C,$00,$00,$00,$7F
+SpriteMaxY:
+//$2D4D		Sprite height bitmask (-> _heightmask)
+	.byte $07,$07,$07,$03,$07,$03,$0F,$07
+	.byte $03,$07,$07
+Points_l:
+//$2D58,X	bcd_t[11] unit point scores (x1)
+	.byte $00,$50,$50,$50,$00,$50,$00,$00
+	.byte $25,$00,$00
+Points_h:
+//$2D63,X	bcd_t[11] unit point scores (x100)
+	.byte $00,$01,$01,$01,$02
+	.byte $02,$00,$10,$00,$00,$00
+DoWarp:
+//$2D6E,Y	bool[11] unit 'warp in' animation
+	.byte $00,$01,$01,$01,$01,$00,$00,$01
+	.byte $00,$00,$00
+//$2d79		135 unused bytes
+	.byte $BB,$CA,$BA,$AA,$9B,$AB,$60
+	.byte $10,$01,$F1,$FF,$07,$00,$28,$00
+	.byte $02,$02,$02,$00,$01,$01,$01,$01
+	.byte $01,$01,$01,$01,$01,$01,$00,$00
+	.byte $01,$01,$00,$00,$11,$12,$13,$10
+	.byte $11,$10,$11,$10,$11,$10,$11,$10
+	.byte $11,$10,$12,$12,$11,$10,$13,$12
+	.byte $F6,$F6,$F6,$00,$01,$F4,$02,$F6
+	.byte $01,$F6,$01,$F1,$01,$F1,$03,$03
+	.byte $01,$F1,$04,$03,$00,$00,$00,$00
+	.byte $E6,$07,$64,$07,$FF,$07,$B4,$07
+	.byte $82,$07,$32,$14,$FF,$03,$00,$AA
+	.byte $32,$32,$32,$00,$FF,$1E,$FF,$0C
+	.byte $FF,$02,$FF,$11,$FF,$28,$08,$08
+	.byte $FF,$3C,$23,$08,$20,$38,$30,$30
+	.byte $30,$0D,$35,$31,$30,$20,$21,$2C
+	.byte $4D,$31,$39,$47,$3F,$58,$57,$80
+vsync:
+//$2E00	
+	.byte $30
+rotatec:
+	.byte $00
+RotColour:
+	.byte $01,$03,$04//Red,Yellow,Blue
+AiVector:		//vector table for ai routines
+//$2E05	
+	.byte $BC,$11,$DA,$11,$61,$13,$F8,$13
+	.byte $2D,$14,$36,$14,$B1,$14,$68,$15
+	.byte $BF,$11,$BF,$11,$BF,$11
+//$2E1B		two unused bytes	
+	.byte $00,$00
+Spawnc:
+//$2E1D		Duint8_t[8]  Unit spawn counts
+	.byte $00,$05,$00,$00,$04,$00,$00,$00
+XMinInit:
+//$2e25		xpos_t[8]  Initial unit minimum X
+	.byte $07,$00,$40,$00,$40,$00,$00,$00
+XRangeInit:
+//$2E2D		uint8_t[8]  Initial unit X range
+	.byte $00,$FF,$7F,$0F,$07,$00,$FF,$3F
+YMinInit:
+//$2E35		ypos_t[8]  Initial unit minimum Y
+	.byte $64,$B4,$00,$00,$00,$00,$0A,$00
+YRangeInit:
+//$2E3D		uint8_t[8]  Initial unit Y range
+	.byte $00,$00,$FF,$FF,$FF,$1F,$00,$FF
+dXMinInit:
+//$2E45		xoffset_t[8] Init minimum dX (abs)
+	.byte $02,$18,$00,$0A,$18,$32,$04,$08
+dXRangeInit:
+//$2E4D		uint8_t[8]  Initial unit dX range
+	.byte $07,$0F,$00,$07,$0F,$07,$00,$07
+dYMinInit:
+//$2E55		yoffset_t[8] Init minimum dY (abs)
+	.byte $0A,$00,$00,$0A,$00,$18,$00,$08
+dYRangeInit:
+//$2E5D		uint8_t[8]  Initial unit dY range	
+	.byte $3F,$00,$00,$07,$0F,$07,$00,$07
+StringV_l:
+//$2E65		LSB of string pointers
+	.byte $8D,$90,$A9,$B5,$F5,$39,$3F
+//$2E6C		13 unused bytes	
+	.byte $9C,$C4,$C4,$C8,$3C,$AC,$A4,$8C
+	.byte $78,$CC,$90,$8C,$A0
+StringV_h:
+//$2E79		MSB of string pointers
+	.byte $2E,$2E,$2E,$2E,$2E,$2F,$2F
+//$2E80		13 unused bytes
+	.byte $00,$00,$03,$00,$00,$00,$00,$00
+	.byte $00,$FC,$00,$00,$03
+string0:
+//$2E8D		string_t[3]  Message string #0
+	.byte $02,$0C,$14
+string1:
+//byte 02=length.clear text and restore def pallete	
+//$2E90		string_t[25]  Message string #1
+	.byte $18,$11,$04,$1F,$04,$0C,$E0,$E1
+	.byte $E2,$E3,$E4,$E5,$20,$E6,$E7,$E8
+	.byte $E9,$EA,$1F,$07,$0F,$EB,$EC,$ED
+	.byte $EE
+string2:
+//$2EA9		string_t[12]  Message string #2
+	.byte $0B,$1F,$07,$0F,$11,$04,$EF,$F0
+	.byte $20,$20,$F1,$F2
+string3:
+//$2EB5		string_t[64]  Message string #3
+//Planetoid Hall of Fame - double height
+	.byte $3F,$16,$07,$81,$9D,$83,$8D,$1F
+	.byte $09,$00,$50,$6C,$61,$6E,$65,$74
+	.byte $6F,$69,$64,$20,$48,$61,$6C,$6C
+	.byte $20,$6F,$66,$20,$46,$61,$6D,$65
+	.byte $1F,$00,$01,$81,$9D,$83,$8D,$1F
+	.byte $09,$01,$50,$6C,$61,$6E,$65,$74
+	.byte $6F,$69,$64,$20,$48,$61,$6C,$6C
+	.byte $20,$6F,$66,$20,$46,$61,$6D,$65
+string4:
+//$2EF5		string_t[68]  Message string #4
+//Congratulations - double height
+	.byte $43,$1F,$0B,$03,$86,$8D,$43,$6F
+	.byte $6E,$67,$72,$61,$74,$75,$6C,$61
+	.byte $74,$69,$6F,$6E,$73,$1F,$0B,$04
+	.byte $86,$8D,$43,$6F,$6E,$67,$72,$61
+	.byte $74,$75,$6C,$61,$74,$69,$6F,$6E
+	.byte $73,$1F,$08,$17,$86,$88,$50,$6C
+//Please enter your name	
+	.byte $65,$61,$73,$65,$20,$65,$6E,$74
+	.byte $65,$72,$20,$79,$6F,$75,$72,$20
+	.byte $6E,$61,$6D,$65
+string5:
+//$2F39		string_t[6]  Message string #5
+	.byte $05,$20,$2E,$2E,$2E,$20
+string6:
+//$2F3F		string_t[81]  Message string #6
+//Today's Greatest
+	.byte $50,$1F,$0A,$03,$8D,$86,$54,$6F
+	.byte $64,$61,$79,$27,$73,$20,$47,$72
+	.byte $65,$61,$74,$65,$73,$74,$1F,$0A
+	.byte $04,$8D,$86,$54,$6F,$64,$61,$79
+	.byte $27,$73,$20,$47,$72,$65,$61,$74
+	.byte $65,$73,$74,$1F,$02,$17,$86,$88
+//Press the SPACE BAR 
+//to play again
+	.byte $50,$72,$65,$73,$73,$20,$74,$68
+	.byte $65,$20,$53,$50,$41,$43,$45,$20
+	.byte $42,$41,$52,$20,$74,$6F,$20,$70
+	.byte $6C,$61,$79,$20,$61,$67,$61,$69
+	.byte $6E
+//$2F90
+	.byte $30,$20,$20,$30,$00,$00,$30,$00
+	.byte $20,$20,$20,$20,$20,$20,$20,$00
+
+	.byte $CC,$CD,$CD,$CC,$F3,$51,$51,$51
+	.byte $00,$10,$10,$C3,$C3,$10,$10,$00
+
+	.byte $82,$92,$92,$C3,$C3,$92,$92,$82
+	.byte $00,$00,$00,$82,$82,$00,$00,$00
+
+	.byte $15,$3F,$15,$11,$11,$11,$33,$11
+	.byte $00,$2A,$3F,$3F,$37,$33,$33,$33
+
+	.byte $00,$00,$00,$2A,$3F,$3F,$3F,$37
+	.byte $00,$00,$00,$00,$00,$3F,$3F,$3F
+
+	.byte $00,$00,$00,$00,$00,$07,$07,$3F
+	.byte $00,$00,$00,$00,$00,$08,$1D,$3F
+	
+	.byte $00,$00,$00,$00,$00,$04,$2E,$3F
+	.byte $00,$00,$00,$00,$00,$0B,$0B,$3F
 
 Boot:
 
 	tsx 
-	stx $39			//Length of variable name
+	stx _gameover_sp
 	lda #<NewBRKVector
-	sta $0202		//BRK vector(BRKV)
+	sta BRKVector
 	lda #<NewBRKVector+1
-	sta $0203 
-	lda #$00		//00 Read host OS
+	sta BRKVector + 1 
+	lda NULL		//00 Read host OS
 	jsr OSBYTE
 
 NewBRKVector:		//$3012
 
-	ldx $39 
+	ldx _gameover_sp 
 	txs 
-	jsr L_JSR_3057_3015
+	jsr SystemCheck
 	bne Hook
-	lda #$24
-	sta $1111 
-	sta $111B 
-	lda #$02
-	sta $1112 
-	sta $111C 
+	lda ALT_VSYNC_LB
+	sta VsyncAddress1 + 1
+	sta WaitVSync + 1
+	lda ALT_VSYNC_HB
+	sta VsyncAddress1 + 2
+	sta WaitVSync + 2
 
 Hook:
 
@@ -4717,27 +4937,27 @@ mkScLoop:
 	bcc YReset
 	jmp Main
 
-L_JSR_3057_3015:
+SystemCheck:
 
-	jsr L_JSR_3067_3057
+	jsr Check2
 	bne L_BRS_305D_305A
 	rts 
 
 L_BRS_305D_305A:
 
 	lda #$30
-	sta $3084 
+	sta TableOne + 1
 	lda #$31
-	sta $3085 
+	sta TableOne + 2
 
-L_JSR_3067_3057:
+Check2:
 
 	ldy #$00
 
 L_BRS_3069_3070:
 
 	iny 
-	lda ($FD),Y 
+	lda (ErrorMessVec),Y
 	beq L_BRS_3080_306C
 	cmp #$30
 	bne L_BRS_3069_3070
@@ -4749,7 +4969,7 @@ L_BRS_3074_307D:
 	lda TableOne,X 
 	beq L_BRS_307F_3078
 	inx 
-	cmp ($FD),Y 
+	cmp (ErrorMessVec),Y 
 	beq L_BRS_3074_307D
 
 L_BRS_307F_3078:
@@ -4762,11 +4982,12 @@ L_BRS_3080_306C:
 	rts
 TableOne:	
 	.byte $2E,$31,$30,$00,$0D
-// $3088
-
+DefHigh:
+// $3088	hiscore_t[24]  Default high score
 	.byte $00,$10,$00
 	.byte $41,$63,$6F,$72,$6E,$73,$6F,$66
-	.byte $74,$0D,$03,$06,$06,$06,$06,$03
+	.byte $74,$0D
+	.byte $03,$06,$06,$06,$06,$03
 	.byte $03,$F3,$03,$0C,$0E,$0E,$0C,$03
 	.byte $03,$F3,$53,$53,$53,$53,$53,$02
 	.byte $02,$00,$41,$C7,$41,$82,$C3,$C7

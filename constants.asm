@@ -11,6 +11,8 @@
 
 // Constants/equates
 
+.const ALT_VSYNC_LB =   $24
+.const ALT_VSYNC_HB =   $02
 .const NULL		    =	0
 .const FALSE		=	0
 .const TRUE		    =	1
