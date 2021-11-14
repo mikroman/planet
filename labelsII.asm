@@ -117,7 +117,6 @@
 .label _irq1v		=	$8c		//*(IRQ1V)
 .label ErrorMessVec =   $fd
 
-.label Vector70	    =	$0070
 .label BRKVector    =   $0202
 .label X_l			=	$0400	//[37]
 .label X_h			=	$0425	//[37]

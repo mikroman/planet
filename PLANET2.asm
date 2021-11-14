@@ -1,4 +1,11 @@
-//November 11, 2021
+// Acornsoft Planetoid, BBC Micro
+// Written by Neil Raine, 1982
+// 6502 disassembly by rainbow
+// 2020.02.08
+// <djrainbow50@gmail.com>
+// https://github.com/r41n60w/planetoid-disasm
+// https://github.com/mikroman/planet (Kick Assembler version by mikroman)
+
 #import "constants.asm"
 #import "labels.asm"
 
@@ -6,10 +13,10 @@
 
 	jmp Boot
 
-IRQHook:	
+IRQHook:
 
-	lda #$02
-	bit SYS6522 + 13	//systemVIAInterruptFlagRegister
+	lda #%00000010
+	bit SYS6522 + 13	//systemVIA Interrupt Flag Register
 	beq L_BRS_110D_1108
 
 VsyncAddress1:
@@ -18,7 +25,7 @@ VsyncAddress1:
 
 L_BRS_110D_1108:
 
-	jmp (_irq1v) 		//old IRQ
+	jmp (_irq1v)
 
 WaitVSync:
 
@@ -155,7 +162,7 @@ L_BRS_11AE_11A1:	//M $2E05
 	sta _destptr_l 
 	lda AiVector + 1,Y 
 	sta _destptr_h 
-	jmp (Vector70) 
+	jmp (_destptr) 
 
 L_BRS_11BB_1194:
 L_BRS_11BB_1198:
@@ -214,7 +221,7 @@ L_BRS_11E9_11DC:
 L_BRS_11FB_11F6:
 
 	bmi L_BRS_1235_11FB
-	lda $046F,X 
+	lda Y_h,X 
 	cmp #$BE
 	bcc L_BRS_1227_1202
 	lda #$06
@@ -259,8 +266,8 @@ L_BRS_1235_11FB:
 	lda #$06
 	jsr IsUnlinked
 	bne L_BRS_1222_1240
-	lda $0425,X 
-	cmp $0425,Y 
+	lda X_h,X 
+	cmp X_h,Y 
 	beq L_BRS_124D_1248
 	jmp J1VF
 
@@ -273,7 +280,7 @@ L_BRS_124D_1248:
 	lda dX_h,Y 
 	sta dX_h,X 
 	lda Param,X 
-	ora #$40
+	ora #%01000000
 	sta Param,X 
 
 L_BRS_1266_1239:
@@ -294,12 +301,12 @@ L_BRS_1266_1239:
 
 L_BRS_1286_1279:
 
-	lda $046F,X 
+	lda Y_h,X 
 	sec 
 	sbc #$0A
-	cmp $046F,Y 
+	cmp Y_h,Y 
 	bcs L_BRS_12CF_128F
-	sta $046F,Y 
+	sta Y_h,Y 
 	lda dXMinInit + LANDER
 	lsr 
 	lsr 
@@ -318,9 +325,9 @@ L_BRS_1286_1279:
 	lda X_l,X 
 	adc #$80
 	sta X_l,Y 
-	lda $0425,X 
+	lda X_h,X 
 	adc #$00
-	sta $0425,Y 
+	sta X_h,Y 
 	tya 
 	sta Param,X 
 	txa 
@@ -343,8 +350,8 @@ J1VE:
 	jsr IsUnlinked
 	bne J1VF
 	sec 
-	lda $0425,Y 
-	sbc $0425,X 
+	lda X_h,Y 
+	sbc X_h,X 
 	sta _temp 
 	lda dX_h,X 
 	asl 
@@ -358,7 +365,7 @@ L_BRS_12FC_12F6:
 	cmp #$32
 	bcs J1VF
 	tya 
-	ora #$80
+	ora #%10000000
 	sta Param,X 
 
 J1VF:
@@ -376,7 +383,7 @@ J1VF:
 	jsr GetYSurf
 	sta _temp_l 
 	sec 
-	lda $046F,X 
+	lda Y_h,X 
 	sbc _temp_l 
 	cmp #$14
 	bcc MoveUp
@@ -398,24 +405,24 @@ MoveDown:
 L_BRS_1339_1333:
 
 	sec 
-	lda $044A,X 
+	lda Y_l,X 
 	sbc _temp_l 
-	sta $044A,X 
-	lda $046F,X 
+	sta Y_l,X 
+	lda Y_h,X 
 	sbc _temp_h 
-	sta $046F,X 
+	sta Y_h,X 
 	jmp AIUpdate
 
 L_BRS_134D_1331:
 L_BRS_134D_1337:
 
 	clc 
-	lda $044A,X 
+	lda Y_l,X 
 	adc _temp_l 
-	sta $044A,X 
-	lda $046F,X 
+	sta Y_l,X 
+	lda Y_h,X 
 	adc _temp_h 
-	sta $046F,X 
+	sta Y_h,X 
 	jmp AIUpdate
 
 AIMutant:
@@ -460,8 +467,8 @@ L_BRS_138F_1389:
 J1396:
 
 	sec 
-	lda $0425 
-	sbc $0425,X 
+	lda X_h + SHIP 
+	sbc X_h,X 
 	php 
 	ldy #$03
 	lda #$50
@@ -487,7 +494,7 @@ L_BRS_13B3_137C:
 	jsr ABSYDisp
 	php 
 	pla 
-	eor #$01
+	eor #%00000001
 	pha 
 	plp 
 	jmp J1385
@@ -503,13 +510,13 @@ L_BRS_13CA_13B5:
 
 GetXDisph:
 
-	ldy $0425 
+	ldy X_h + SHIP 
 	lda $1D 
 	asl 
-	lda $0425,X 
+	lda X_h,X 
 	bcc L_BRS_13E3_13DD
 	tya 
-	ldy $0425,X 
+	ldy X_h,X 
 
 L_BRS_13E3_13DD:
 
@@ -521,13 +528,13 @@ L_BRS_13E3_13DD:
 ABSYDisp:
 
 	sec 
-	lda $046F,X 
-	sbc $046F 
+	lda Y_h,X 
+	sbc Y_h + SHIP 
 	pha 
 	asl 
 	pla 
 	bpl L_BRS_13F7_13F3
-	eor #$FF
+	eor #%11111111
 
 L_BRS_13F7_13F3:
 
@@ -570,14 +577,14 @@ AISwarmer:
 
 	jsr DYSine
 	sec 
-	lda $0425,X 
-	sbc $0425 
+	lda X_h,X 
+	sbc X_h + SHIP 
 	sta _temp 
 	eor dX_h,X 
 	bmi L_BRS_1457_1445
 	lda _temp 
 	bpl L_BRS_144D_1449
-	eor #$FF
+	eor #%11111111
 
 L_BRS_144D_1449:
 
@@ -610,11 +617,11 @@ DYSine:
 
 	lda #$00
 	sta _temp 
-	lda $046F,X 
+	lda Y_h,X 
 	sec 
 	sbc #$62
 	bcs L_BRS_1497_147A
-	eor #$FF
+	eor #%11111111
 	clc 
 	adc #$01
 	asl 
@@ -668,17 +675,17 @@ L_BRS_14C6_14B9:
 	ldx #$01
 	jsr GetYSurf
 	ldx $85 
-	cmp $0470 
+	cmp Y_h + HITCH 
 	bcs L_BRS_14D8_14D5
 	rts 
 
 L_BRS_14D8_14D5:
 
 	dec $2D 
-	lda $0426 
-	sta $0425,X 
-	lda $0470 
-	sta $046F,X 
+	lda X_h + HITCH 
+	sta X_h,X 
+	lda Y_h + HITCH 
+	sta Y_h,X 
 	lda #$00
 	sta dY_h,X 
 	sta dY_l,X 
@@ -706,7 +713,7 @@ L_BRS_1509_14C7:
 	sbc #$00
 	sta dY_h,X 
 	jsr GetYSurf
-	cmp $046F,X 
+	cmp Y_h,X 
 	bcc AIUpdate
 	lda dY_h,X 
 	cmp #$FB
@@ -737,7 +744,7 @@ Walk:
 	sta _temp2 
 	jsr GetYSurf
 	sec 
-	sbc $046F,X 
+	sbc Y_h,X 
 	cmp #$04
 	bmi L_BRS_1565_155A
 	cmp #$08
@@ -953,7 +960,7 @@ L_BRS_1667_1664:
 	pla 
 	pha 
 	tax 
-	lda $046F,X 
+	lda Y_h,X 
 	lsr 
 	lsr 
 	clc 
@@ -962,7 +969,7 @@ L_BRS_1667_1664:
 	sec 
 	lda X_l,X 
 	sbc $20 
-	lda $0425,X 
+	lda X_h,X 
 	sbc $21 
 	clc 
 	adc #$6C
@@ -1025,7 +1032,7 @@ L_BRS_16E7_16DC:
 L_BRS_16E8_16E2:
 
 	stx $85 
-	lda $046F 
+	lda Y_h + SHIP 
 	sec 
 	sbc #$06
 	tay 
@@ -1317,7 +1324,7 @@ L_BRS_186F_18E3:
 
 	lda pSprite_h,X 
 	beq L_BRS_18E0_1872
-	lda $046F,X 
+	lda Y_h,X 
 	sec 
 	sbc $7C 
 	cmp #$08
@@ -1483,12 +1490,12 @@ L_BRS_1967_1952:
 	tax 
 	jsr ClearData
 	lda Unit,X 
-	and #$7F
+	and #%01111111
 	cmp #$07
 	bne L_BRS_1998_1973
-	lda $0425,X 
-	sta $2E2A 
-	lda $046F,X 
+	lda X_h,X 
+	sta XMinInit + SWARMER
+	lda Y_h,X 
 	sec 
 	sbc #$08
 	sta $2E3A 
@@ -1496,7 +1503,7 @@ L_BRS_1967_1952:
 	and #$07
 	clc 
 	adc #$05
-	sta $2E22 
+	sta Spawnc + SWARMER 
 	txa 
 	pha 
 	lda #$85
@@ -1546,7 +1553,7 @@ L_BRS_19BE_19EA:
 	asl 
 	bpl L_BRS_19DB_19C2
 	tya 
-	ora #$80
+	ora #%10000000
 	sta Unit,X 
 	jsr InitUnit
 	cpy #$03
@@ -1610,9 +1617,9 @@ SpawnBait:
 	dec $19 
 	bne L_BRS_1A23_1A0D
 	lda #$01
-	sta $2E20 
-	lda $0425 
-	sta $2E28 
+	sta Spawnc + BAITER 
+	lda X_h + SHIP 
+	sta XMinInit +  BAITER
 	lda #$83
 	jsr MSpawn
 	lda #$02
@@ -1651,7 +1658,7 @@ L_BRS_1A44_1A38:
 	and XRangeInit,Y 
 	clc 
 	adc XMinInit,Y 
-	sta $0425,X 
+	sta X_h,X 
 	jsr Random
 	and YRangeInit,Y 
 	clc 
@@ -1662,7 +1669,7 @@ L_BRS_1A44_1A38:
 
 L_BRS_1A61_1A5D:
 
-	sta $046F,X 
+	sta Y_h,X 
 
 InitDXY:
 
@@ -1786,9 +1793,9 @@ L_BRS_1AF6_1B32:
 	jsr GetXScreen
 	cmp #$50
 	bcs BombNext
-	lda $0425,X 
-	eor #$80
-	sta $0425,X 
+	lda X_h,X 
+	eor #10000000
+	sta X_h,X 
 	bne BombNext
 
 L_BRS_1B29_1B09:
@@ -1890,8 +1897,8 @@ L_BRS_1BA1_1B9E:
 	cmp _temp 
 	bcs L_BRS_1BC1_1BA6
 	sec 
-	lda $0425 
-	sbc $0425,X 
+	lda X_h + SHIP 
+	sbc X_h,X 
 	bpl L_BRS_1BB8_1BAF
 	sta _temp 
 	sec 
@@ -1918,21 +1925,21 @@ L_BRS_1BC2_1BBF:
 TargetShip:
 
 	sec 
-	lda $0425 
-	sbc $0425,X 
+	lda X_h + SHIP 
+	sbc X_h,X 
 	jsr DistDiv64
 	sta _srcptr_h 
 	clc 
 	lda _temp_l 
 	sta _srcptr_l 
-	adc dX_l 
+	adc dX_l + SHIP
 	sta dX_l,Y 
 	lda _temp_h 
 	adc dX_h 
 	sta dX_h,Y 
 	sec 
-	lda $046F 
-	sbc $046F,X 
+	lda Y_h + SHIP 
+	sbc Y_h,X 
 	jsr DistDiv64
 	sta _destptr_h 
 	sta dY_h,Y 
@@ -2059,7 +2066,7 @@ L_BRS_1C94_1C8D:
 ShootID:
 
 	lda Unit,Y 
-	eor #$C0
+	eor #%11000000
 	asl 
 	asl 
 	bcs L_BRS_1CCA_1C9C
@@ -2068,15 +2075,15 @@ ShootID:
 	lda X_l,X 
 	sta X_l,Y 
 	clc 
-	lda $0425,X 
+	lda X_h,X 
 	adc #$01
-	sta $0425,Y 
-	lda $044A,X 
-	sta $044A,Y 
+	sta X_h,Y 
+	lda Y_l,X 
+	sta Y_l,Y 
 	sec 
-	lda $046F,X 
+	lda Y_h,X 
 	sbc #$04
-	sta $046F,Y 
+	sta Y_h,Y 
 	lda #$00
 	sta Param,Y 
 	sta Anim,Y 
@@ -2135,16 +2142,16 @@ L_BRS_1D04_1D41:
 	lda #$00
 	sta Anim,X 
 	sta pDot_h,X 
-	lda $0425 
+	lda X_h + SHIP 
 	clc 
 	adc #$02
-	sta $0425,X 
+	sta X_h,X 
 	lda X_l 
 	sta X_l,X 
-	lda $046F 
-	sta $046F,X 
-	lda $044A 
-	sta $044A,X 
+	lda Y_h + SHIP 
+	sta Y_h,X 
+	lda Y_l 
+	sta Y_l,X 
 	ldy #$00
 	jsr InitDXY
 	dex 
@@ -2230,7 +2237,7 @@ Game:
 	lda #$06
 	jsr MSpawn
 	lda #$00
-	sta $2E23 
+	sta Spawnc + MAN
 	ldx #$14
 	jsr DoNFrames
 	jsr MSpawnAll
@@ -2326,7 +2333,7 @@ XYToVidP:
 	cpx $29 
 	bcs L_BRS_1E7D_1E3B
 	tya 
-	eor #$FF
+	eor #%11111111
 	pha 
 	lsr 
 	lsr 
@@ -2505,7 +2512,7 @@ NextFrame:
 	lda $15 
 	bne L_BRS_1F2F_1F26
 	lda $0F 
-	ora #$60
+	ora #%01100000
 	jsr SetPallette
 
 L_BRS_1F2F_1F26:
@@ -2560,7 +2567,7 @@ PSurfRight:
 	pha 
 	sta $78 
 	sty $7E 
-	ldy $0C,X 
+	ldy _xwinedge,X 
 
 L_BRS_1F78_1F80:
 
@@ -2570,7 +2577,7 @@ L_BRS_1F78_1F80:
 	dec $78 
 	bne L_BRS_1F78_1F80
 	tya 
-	sta $0C,X 
+	sta _xwinedge,X 
 	pla 
 	rts 
 
@@ -2579,7 +2586,7 @@ PSurfLeft:
 	pha 
 	sta $78 
 	sty $7E 
-	ldy $0C,X 
+	ldy _xwinedge,X 
 
 L_BRS_1F8E_1F96:
 
@@ -2589,7 +2596,7 @@ L_BRS_1F8E_1F96:
 	inc $78 
 	bne L_BRS_1F8E_1F96
 	tya 
-	sta $0C,X 
+	sta _xwinedge,X 
 	pla 
 	rts 
 
@@ -2659,17 +2666,17 @@ L_BRS_1FF8_1FF3:
 	lda $24 
 	beq L_BRS_2016_1FFA
 	lda $3C 
-	eor #$80
+	eor #%10000000
 	sta $3C 
 	bmi L_BRS_200B_2002
-	eor #$06
+	eor #%00000110
 	sta $3C 
 	jsr SetPallette
 
 L_BRS_200B_2002:
 
 	lda #$00
-	sta dX_l 
+	sta dX_l + SHIP
 	sta dX_h 
 	jmp UpdateShip
 
@@ -2680,11 +2687,11 @@ L_BRS_2016_1FFA:
 	jsr ScanInkey
 	beq L_BRS_202D_201E
 	clc 
-	lda $046F 
+	lda Y_h + SHIP 
 	adc #$02
 	cmp #$C3
 	bcs L_BRS_202D_2028
-	sta $046F 
+	sta Y_h + SHIP 
 
 L_BRS_202D_201E:
 L_BRS_202D_2028:
@@ -2693,11 +2700,11 @@ L_BRS_202D_2028:
 	jsr ScanInkey
 	beq L_BRS_2041_2032
 	sec 
-	lda $046F 
+	lda Y_h + SHIP 
 	sbc #$02
 	cmp #$09
 	bcc L_BRS_2041_203C
-	sta $046F 
+	sta Y_h + SHIP 
 
 L_BRS_2041_2032:
 L_BRS_2041_203C:
@@ -2718,7 +2725,7 @@ L_BRS_204A_2046:
 	ldx #$00
 	jsr XBLTSprite
 	lda SpriteV_l 
-	eor #$30
+	eor #%00110000
 	sta SpriteV_l 
 	lda #$00
 	sta pSprite_h 
@@ -2736,9 +2743,9 @@ L_BRS_2077_204C:
 	jsr ScanInkey
 	beq L_BRS_208F_207C
 	clc 
-	lda dX_l 
+	lda dX_l + SHIP
 	adc $1C 
-	sta dX_l 
+	sta dX_l + SHIP
 	lda dX_h 
 	adc $1D 
 	sta dX_h 
@@ -2746,14 +2753,14 @@ L_BRS_2077_204C:
 L_BRS_208F_207C:
 
 	lda dX_h 
-	ora dX_l
+	ora dX_l + SHIP
 	beq L_BRS_20EB_2095
 	lda dX_h 
 	bpl L_BRS_20C2_209A
 	clc 
-	lda dX_l 
+	lda dX_l + SHIP
 	adc #$03
-	sta dX_l 
+	sta dX_l + SHIP
 	lda dX_h 
 	adc #$00
 	sta dX_h 
@@ -2764,15 +2771,15 @@ L_BRS_208F_207C:
 	lda #$FF
 	sta dX_h 
 	lda #$00
-	sta dX_l 
+	sta dX_l + SHIP
 	beq L_BRS_20EB_20C0
 
 L_BRS_20C2_209A:
 
 	sec 
-	lda dX_l 
+	lda dX_l + SHIP
 	sbc #$03
-	sta dX_l 
+	sta dX_l + SHIP
 	lda dX_h 
 	sbc #$00
 	sta dX_h 
@@ -2781,14 +2788,14 @@ L_BRS_20C2_209A:
 	cmp #$01
 	bmi L_BRS_20EB_20DA
 	lda #$00
-	sta dX_l 
+	sta dX_l + SHIP
 	beq L_BRS_20EB_20E1
 
 L_BRS_20E3_20AD:
 L_BRS_20E3_20D3:
 
 	lda #$00
-	sta dX_l 
+	sta dX_l + SHIP
 	sta dX_h 
 
 L_BRS_20EB_2095:
@@ -2821,7 +2828,7 @@ L_BRS_210B_2101:
 L_BRS_210B_2105:
 
 	clc 
-	adc dX_l 
+	adc dX_l + SHIP
 	sta $1E 
 	tya 
 	adc dX_h 
@@ -2848,18 +2855,18 @@ Hitchhiker:
 	lda $2D 
 	beq L_BRS_215D_2134
 	lda #$06
-	sta $05BD 
+	sta Unit + HITCH 
 	lda X_l 
 	clc 
 	adc #$80
-	sta $0401 
+	sta X_l + HITCH
 	lda #$00
-	adc $0425 
-	sta $0426 
-	lda $046F 
+	adc X_h + SHIP 
+	sta X_h + HITCH 
+	lda Y_h + SHIP 
 	sec 
 	sbc #$0A
-	sta $0470 
+	sta Y_h + HITCH 
 	ldx #$01
 	jsr NextVidP
 	jmp MMUpdate
@@ -2876,10 +2883,10 @@ MoveUnit:
 	tay 
 	clc 
 	lda dY_l,X 
-	adc $044A,X 
-	sta $044A,X 
+	adc Y_l,X 
+	sta Y_l,X 
 	lda dY_h,X 
-	adc $046F,X 
+	adc Y_h,X 
 	cmp #$C3
 	bcc L_BRS_2182_217A
 	cpy #$00
@@ -2909,7 +2916,7 @@ L_BRS_219A_2184:
 L_BRS_219A_218C:
 L_BRS_219A_2196:
 
-	sta $046F,X 
+	sta Y_h,X 
 
 MoveXUnit:
 
@@ -2918,12 +2925,12 @@ MoveXUnit:
 	adc X_l,X 
 	sta X_l,X 
 	lda dX_h,X 
-	adc $0425,X 
-	sta $0425,X 
+	adc X_h,X 
+	sta X_h,X 
 
 NextVidP:
 
-	ldy $046F,X 
+	ldy Y_h,X 
 	txa 
 	pha 
 	jsr GetXScreen
@@ -2956,7 +2963,7 @@ GetXScreen:
 	lda X_l,X 
 	sbc $20 
 	sta _offset_l 
-	lda $0425,X 
+	lda X_h,X 
 	sbc $21 
 	sta _offset_h 
 	asl _offset_l 
@@ -2982,7 +2989,7 @@ L_BRS_21F7_224B:
 	pha 
 	lda Unit,X 
 	bmi L_BRS_2246_21FC
-	ora #$80
+	ora #%10000000
 	sta Unit,X 
 	lda Anim,X 
 	bne L_BRS_2246_2206
@@ -3188,9 +3195,9 @@ L_BRS_231F_2389:
 	bcs CollideNext
 	lda Anim,X 
 	bne CollideNext
-	lda $046F,X 
+	lda Y_h,X 
 	sec 
-	sbc $046F 
+	sbc Y_h + SHIP 
 	cmp #$08
 	bpl CollideNext
 	cmp #$F9
@@ -3309,9 +3316,9 @@ L_BRS_23D6_23D2:
 	lda #$0A
 	sta $19 
 	lda #$00
-	sta $2E20 
+	sta Spawnc + BAITER
 	lda $15 
-	sta $2E23 
+	sta Spawnc + MAN
 	ldx #$1F
 	lda #$FF
 
@@ -3335,7 +3342,7 @@ L_BRS_23F1_23F5:
 	lda #$02
 	sta $14 
 	lda #$00
-	sta $2E22 
+	sta Spawnc + SWARMER 
 	ldx #$00
 	lda $16 
 	cmp #$01
@@ -3348,7 +3355,7 @@ L_BRS_23F1_23F5:
 L_BRS_2429_241F:
 L_BRS_2429_2425:
 
-	stx $2E21 
+	stx Spawnc +  BOMBER
 	ldx #$04
 	cmp #$04
 	bcs L_BRS_243E_2430
@@ -3371,7 +3378,7 @@ L_BRS_243E_243B:
 	adc #$02
 	cmp #$18		//progressive difficulty
 	bcs L_BRS_244E_2449
-	sta $2E46 
+	sta dXMinInit + LANDER
 
 L_BRS_244E_2449:
 
@@ -3381,7 +3388,7 @@ L_BRS_244E_2449:
 ContLevel:
 
 	lda #$80
-	sta $2E2A 
+	sta XMinInit + SWARMER
 	ldx #$1F
 
 L_BRS_2459_246E:
@@ -3420,11 +3427,11 @@ NewScreen:
 	clc 
 	lda $21 
 	adc #$07
-	sta X_h 
+	sta X_h + SHIP 
 	lda #$00
-	sta $044A 
+	sta Y_l 
 	lda #$64
-	sta $046F 
+	sta Y_h + SHIP 
 	lda #$07
 	sta $1C 
 	lda #$00
@@ -3438,7 +3445,7 @@ L_BRS_24AC_24AF:
 	dex 
 	bpl L_BRS_24AC_24AF
 	lda #$FF
-	sta $05BD 
+	sta Unit + HITCH 
 	ldx #$24
 
 L_BRS_24B8_24C3:
@@ -3456,10 +3463,10 @@ L_BRS_24C5_24C9:
 	dex 
 	bpl L_BRS_24C5_24C9
 	lda #$80
-	sta $05E2 
+	sta Param + HITCH
 	lda #$00
-	sta Unit 
-	sta dX_l 
+	sta Unit + SHIP
+	sta dX_l + SHIP
 	sta dX_h 
 	sta Anim 
 	sta $24 
@@ -3623,15 +3630,15 @@ Score500:
 L_BRS_25D3_2619:
 
 	clc 
-	lda $046F,Y 
+	lda Y_h,Y 
 	adc #$0C
-	sta $046F,Y 
+	sta Y_h,Y 
 	lda dX_h 
 	asl 
 	lda dX_h 
 	ror 
 	sta dX_h,Y 
-	lda dX_l 
+	lda dX_l + SHIP
 	ror 
 	sta dX_l,Y 
 	lda #$00
@@ -3916,7 +3923,7 @@ InitZP:
 	lda #$0A		//#of humanoids
 	sta $15 
 	lda #$08		//starting difficulty
-	sta $2E46 
+	sta dXMinInit + LANDER 
 	lda #$00
 	sta $3A 
 	lda #$05		//game speed
@@ -4068,9 +4075,9 @@ L_BRS_2844_285C:
 
 	lda HiScore,X 
 	cmp $30 
-	lda $0701,X 
+	lda HiScore + 1,X 
 	sbc $31 
-	lda $0702,X 
+	lda HiScore + 2,X 
 	sbc $32 
 	bcc L_BRS_2860_2853
 	txa 
@@ -4099,13 +4106,13 @@ L_BRS_2868_2871:
 L_BRS_2873_2864:
 
 	lda #$0D
-	sta $0703,X 
+	sta HiScore + 3,X 
 	lda $30 
 	sta HiScore,X 
 	lda $31 
-	sta $0701,X 
+	sta HiScore + 1,X 
 	lda $32 
-	sta $0702,X 
+	sta HiScore + 2,X 
 	jsr PrintHighs
 	jsr InputName
 
@@ -4139,9 +4146,9 @@ L_BRS_289B_28F1:
 	jsr CursorXY
 	pla 
 	tax 
-	lda $0702,X 
+	lda HiScore + 2,X 
 	jsr RJustBCD
-	lda $0701,X 
+	lda HiScore + 1,X 
 	jsr PrintBCD
 	lda HiScore,X 
 	jsr PrintBCD
@@ -4205,7 +4212,7 @@ InputName:
 	bcc L_BRS_293A_2931
 	ldx _temp 
 	lda #$0D
-	sta $0703,X 
+	sta HiScore + 3,X 
 
 L_BRS_293A_2931:
 
@@ -4429,7 +4436,7 @@ L_BRS_2A9F_2AD3:
 	jsr WarpCoord
 	pha 
 	ldx $89 
-	lda $046F,X 
+	lda Y_h,X 
 	tax 
 	lda WarpY,Y 
 	jsr WarpCoord
@@ -4473,7 +4480,7 @@ L_BRS_2AE0_2B19:
 	ldx BlastX,Y 
 	jsr BlastCoord
 	pha 
-	lda $046F,X 
+	lda Y_h,X 
 	ldx BlastY,Y 
 	jsr BlastCoord
 	tay 
@@ -4570,7 +4577,7 @@ GetYSurf:
 
 	lda X_l,X 
 	asl 
-	lda $0425,X 
+	lda X_h,X 
 	rol 
 	tay 
 	lda SurfaceY,Y
