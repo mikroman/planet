@@ -18,7 +18,7 @@
 .label _inkey_tab	= 	$0e
 .label _bgpal		=	$0f	// logical colour 0
 .label _framec_l	=	$10	
-.label _framec_h	=	$11	
+.label _framec_h	=	$11
 .label _count		=	$12
 .label _enemyc		=	$13	// not baiters/humans
 .label _squaddelay	=	$14
@@ -60,12 +60,13 @@
 .label _lives		=	$37
 .label _bombs		=	$38
 .label _gameover_sp =	$39		//
+.label _shootspeed  =   $3a
 .label _bomb_pass2	=	$3b
 .label _shippal	    =	$3c		// " 7
 .label _rotpalc	    =	$3d
 .label _surfpal	    =	$3e		// " 6
 .label _nextlvl_sp	=	$3f
-.label _is_spawning=	$40
+.label _is_spawning =	$40
 .label _savedx		=	$41
 .label _savedy		=	$42
 .label _high_rank	=	$43	// hiscores #1 to #8

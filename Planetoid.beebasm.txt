@@ -452,7 +452,7 @@ j1385:		ldy		#6    		;1385below
 j1396:		sec					;1396
 			lda		X_h + SHIP
 			sbc		X_h,x
-			php		; save N	
+			php		; save N	MISSING LDY #$03 (needed?)
 			lda		#80
 			plp		
 			bpl		+
@@ -904,7 +904,7 @@ xdot:		sec
 			sbc		_xrel_l
 			lda		X_h,x
 			sbc		_xrel_h		;-> Xscr/2
-			jsr		xoffset110
+			jsr		xoffset110;		DIFFERENT
 			lsr					;+27	
 			lsr		
 			php		; store carry = bit 1
@@ -1751,7 +1751,7 @@ targetloop:	lda		dY_h,y		;1bfc
 			ora		_srcptr_h
 			beq		target_ret
 			lda		dX_l,y		;+dx
-++			cmp		_shootspeed	;1c22
+++			cmp		_shootspeed	;1c22 DIFF NO LABEL
 			bcs		target_ret
 
 			clc
@@ -2407,7 +2407,7 @@ flashframe:	lda		#0			;stop ship
 			;move_ship(SHIP)
 			;mm_update(SHIP)
 			;rts
-to_pausquit:jmp		pause_quit
+to_pausquit:jmp		pause_quit DIFF
 			;key_fire()
 			;keys_nav()
 			;scroll_scrn()
@@ -2566,7 +2566,7 @@ hitchhiker:	lda		_hikerc
 			sta		Unit + HITCH
 hhx:		lda		X_l + SHIP
 			clc	
-;			adc		#0			;unneeded
+;			adc		#0			;unneeded  DIFF
 			sta		X_l + HITCH	;ship left
 			lda		#1			;+ 4px	
 			adc		X_h + SHIP	
@@ -2967,7 +2967,7 @@ nxlev4:		clc
 			sta		Spawnc + BAITER ;_bait
 			lda		_humanc		;survivors
 			sta		Spawnc + MAN
-nxlev5:		ldx		#Uf			;id #
+nxlev5:		ldx		#Uf			;id #	DIFF should be #ID_MAX
 			lda		#EMPTY		;ff
 nlclrslots:	sta		Unit,x		;clr slots
 			dex					;S,HH,Uall
@@ -3138,7 +3138,7 @@ blackpal:	jsr		set_palette
 			lda		#0			;string0
 			jsr		print_n		;VDU 20,12
 
-			lda		#(PALX_ENEMYB|BLACK)
+			lda		#(PALX_ENEMYB|BLACK) DIFF error?
 setpalx:	jsr		set_palette	;80
 			clc
 			adc		#$11		;[91,a2 ..
@@ -3330,7 +3330,7 @@ add_score:	sed					;bcd_t
 			dex
 			bpl		-			;[2,0]
 
-			jsr		paint_digit	;spacer
+			jsr		paint_digit	;spacer  DIFF
 			ldx		#0
 			lda		_lives
 			jsr		paint_bcd	;#of lives
@@ -3690,7 +3690,7 @@ newhigh:	stx		_temp		;2860
 			bne		-  			;downshift
 
 +			lda		#'\r'		;2873 0d
-			sta		HiScore+3,x3 ;blank
+			sta		HiScore+3,x3 ;blank DIFF ERROR x3?
 			lda		_score_lsb
 			sta		HiScore,x
 			lda		_score_100

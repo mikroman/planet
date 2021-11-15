@@ -33,13 +33,14 @@
 .label _hikerc		=	$2d //hitchhikers(rescuees)
 .label _flpalc		=	$35
 .label _flpalframes =	$36
+.label _shootspeed  =   $3a
 .label _rotpalc	    =	$3d
 
 //Sprite/id
 .label _id_alt		=	$22
 .label _batch		=	$25
 .label _batchc		=	$26
-.label _spawn_spr	=	$27
+.label _spawn_spr	=	$27 
 .label _id			=	$89
 
 //Palette
