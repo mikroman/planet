@@ -45,6 +45,7 @@
 .const PAL_SURF	    =	$60 // red, green lvl x5
 .const PAL_SHIP	    =	$70 // ship hit ->flash red
 .const PALX_CLEAR	=	$80 // centre of baiter
+.const PALX_ENEMYB  =   $80 // added by mikroman
 .const PALX_UNITR	=	$90 // pod, swarmer
 .const PALX_UNITG	=	$a0 //[ land/mut,bait,human
 .const PALX_UNITY	=	$b0 //[ above x4 + swarmer

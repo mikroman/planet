@@ -3501,7 +3501,7 @@ L_BRS_2510_2516:
 	bne L_BRS_2510_2516
 	lda #$00
 	jsr PrintN
-	lda #$80		//#(PALX_ENEMYB|BLACK) DIFF error?
+	lda #(PALX_ENEMYB|BLACK)
 
 L_BRS_251F_2525:
 
@@ -3778,7 +3778,7 @@ L_BRS_26A5_2698:
 L_BRS_26A5_269C:
 
 	txa 
-	and #%0000111
+	and #%00001111
 	bne L_BRS_2680_26A8
 	ldx _temp 
 	rts 

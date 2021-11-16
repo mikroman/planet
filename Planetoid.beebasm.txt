@@ -3138,7 +3138,7 @@ blackpal:	jsr		set_palette
 			lda		#0			;string0
 			jsr		print_n		;VDU 20,12
 
-			lda		#(PALX_ENEMYB|BLACK) DIFF error?
+			lda		#(PALX_ENEMYB|BLACK) DIFF error? maybe PAL_SHIP2? instead
 setpalx:	jsr		set_palette	;80
 			clc
 			adc		#$11		;[91,a2 ..
