@@ -4,10 +4,10 @@
 // 2020.02.08
 // <djrainbow50@gmail.com>
 // https://github.com/r41n60w/planetoid-disasm
-// https://github.com/mikroman/planet (Kick Assembler version by)
+// https://github.com/mikroman/planet (Kick Assembler version by mikroman)
 
 #import "constants.asm"
-#import "labels.asm"
+#import "labelsII.asm"
 
 *=$1100 "Game"
 
@@ -153,10 +153,7 @@ L_BRS_11AB_11A3:
 
 	jmp AnimFrame
 
-L_BRS_11AE_11A1:	//M $2E05
-	// .byte $BC,$11,$DA,$11,$61,$13,$F8,$13
-	// .byte $2D,$14,$36,$14,$B1,$14,$68,$15
-	// .byte $BF,$11,$BF,$11,$BF,$11,$00,$00
+L_BRS_11AE_11A1:
 
 	lda AiVector,Y 
 	sta _destptr_l 
@@ -1007,7 +1004,7 @@ L_BRS_16C3_16BF:
 
 KeyFire:
 
-	ldx #KEY_RETURN		//Return key
+	ldx #KEY_RETURN
 	jsr ScanInkey
 	beq L_BRS_16DA_16D6
 	eor _inkey_enter
@@ -2095,7 +2092,7 @@ L_BRS_1CCA_1C9C:
 
 Frame:
 
-	ldx #KEY_TAB		//tab key
+	ldx #KEY_TAB
 	jsr ScanInkey
 	beq L_BRS_1CD4_1CD0
 	eor _inkey_tab
@@ -2304,7 +2301,7 @@ RMSurface:
 ScanInkey:
 
 	ldy #$FF
-	lda #$81//Read key with time limit/Scan for any keys/Read OS version
+	lda #$81
 	jsr OSBYTE
 	txa 
 	rts 
@@ -2683,7 +2680,7 @@ L_BRS_200B_2002:
 L_BRS_2016_1FFA:
 
 	jsr KeyFire
-	ldx #KEY_A		//A key
+	ldx #KEY_A
 	jsr ScanInkey
 	beq L_BRS_202D_201E
 	clc 
@@ -2696,7 +2693,7 @@ L_BRS_2016_1FFA:
 L_BRS_202D_201E:
 L_BRS_202D_2028:
 
-	ldx #KEY_Z		//Z key
+	ldx #KEY_Z
 	jsr ScanInkey
 	beq L_BRS_2041_2032
 	sec 
@@ -2709,7 +2706,7 @@ L_BRS_202D_2028:
 L_BRS_2041_2032:
 L_BRS_2041_203C:
 
-	ldx #KEY_SPACE		//space bar
+	ldx #KEY_SPACE
 	jsr ScanInkey
 	beq L_BRS_204A_2046
 	eor _inkey_space
@@ -2739,7 +2736,7 @@ L_BRS_204A_2046:
 
 L_BRS_2077_204C:
 
-	ldx #KEY_SHIFT		//Shift key
+	ldx #KEY_SHIFT
 	jsr ScanInkey
 	beq L_BRS_208F_207C
 	clc 
@@ -2985,7 +2982,7 @@ RepaintAll:
 
 L_BRS_21F7_224B:
 
-	txa 		//save X
+	txa
 	pha 
 	lda Unit,X 
 	bmi L_BRS_2246_21FC
@@ -3038,13 +3035,13 @@ L_BRS_2246_221A:
 
 XBLTSprite:
 
-	lda SpriteMaxY,X //$07,$07,$07,$03,$07,$03,$0F,$07,$03,$07,$07
+	lda SpriteMaxY,X
 	sta _heightmask
-	lda SpriteLen,X //$30,$20,$20,$14,$18,$0C,$08,$18,$02,$28,$28
+	lda SpriteLen,X
 	sta _imglen 
-	lda SpriteV_l,X //$C0,$2C,$4C,$6C,$94,$AC,$A0,$A8,$B8,$BE,$CE
+	lda SpriteV_l,X
 	sta _srcptr_l 
-	lda SpriteV_h,X //$0F,$10,$10,$10,$10,$10,$0F,$0F,$10,$10,$10
+	lda SpriteV_h,X
 	sta _srcptr_h 
 	jsr XORBlit
 	cpx #U_SHIP
@@ -3376,7 +3373,7 @@ L_BRS_243E_243B:
 	lda dXMinInit + LANDER
 	clc 
 	adc #$02
-	cmp #$18		//progressive difficulty
+	cmp #$18
 	bcs L_BRS_244E_2449
 	sta dXMinInit + LANDER
 
@@ -3990,8 +3987,8 @@ FrameAll:
 
 CursorOn:
 
-	lda #$04		//enable/disable cursor editing keys
-	ldx #$00		//enable
+	lda #$04
+	ldx #$00
 	jsr OSBYTE
 	ldx #$0A
 	lda #_srcptr_l
@@ -3999,8 +3996,8 @@ CursorOn:
 
 CursorOff:
 
-	lda #$04		//enable/disable cursor editing keys
-	ldx #$01		//disable
+	lda #$04
+	ldx #$01
 	jsr OSBYTE
 	ldx #$0A
 	lda #%00100000
@@ -4038,7 +4035,7 @@ PrintDigit:
 	ora _leading0
 	sta _leading0
 	bne L_BRS_281E_281A
-	ldx #$F0		//#(' '-'0')	;0 -> $f0
+	ldx #(' '-'0')	//$f0
 
 L_BRS_281E_281A:
 
@@ -4067,7 +4064,7 @@ CursorXY:
 
 Hiscore:
 
-	lda #$7E		//Acknowledge ESCAPE Condition
+	lda #$7E
 	jsr OSBYTE
 	ldx #$00
 
@@ -4105,7 +4102,7 @@ L_BRS_2868_2871:
 
 L_BRS_2873_2864:
 
-	lda #$0D		//Return
+	lda #$0D
 	sta HiScore + 3,X 
 	lda _score_lsb
 	sta HiScore,X 
@@ -4207,8 +4204,8 @@ InputName:
 	sta ParamBlk + 4 
 	ldx #<ParamBlk
 	ldy #>ParamBlk
-	lda #$00		//input line
-	jsr OSWORD
+	lda #$00
+	jsr OSWORD		//input line
 	bcc L_BRS_293A_2931
 	ldx _temp 
 	lda #$0D
@@ -4313,7 +4310,7 @@ Planetoid:
 
 	tsx 
 	stx _gameover_sp 
-	lda #$00		//power hum sound
+	lda #$00		//Start-up hum sound
 	jsr PlaySound
 	jsr InitZP
 
