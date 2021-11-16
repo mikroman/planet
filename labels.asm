@@ -145,7 +145,6 @@
 .label _offset_l	=	$76
 .label _offset_h	=	$77
 // REVERSED already
-.label Vector70	    =	$70
 .label BRKVector    =   $202
 .label X_l			=	$400	//[37]
 .label X_h			=	$425	//[37]
