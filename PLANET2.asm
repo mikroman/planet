@@ -77,7 +77,7 @@ AIBatch:
 	sta _min_xscr
 	lda #$4D
 	sta _max_xscr
-	lda  _scrolloff_l
+	lda _scrolloff_l
 	bpl L_BRS_1159_1150
 	clc 
 	adc #$4D
@@ -196,7 +196,7 @@ L_BRS_11D9_11D4:
 
 ai_lander:
 
-	lda  _humanc
+	lda _humanc
 	bne L_BRS_11E9_11DC
 	jsr EraseUnit
 	lda #MUTANT
@@ -678,7 +678,7 @@ L_BRS_14C6_14B9:
 
 L_BRS_14D8_14D5:
 
-	dec  _hikerc
+	dec _hikerc
 	lda X_h + HITCH 
 	sta X_h,X 
 	lda Y_h + HITCH 
@@ -790,8 +790,8 @@ L_BRS_157F_15AF:
 	jsr InsParam
 	txa 
 	pha 
-	ldx #$80
-	ldy #$2C		//8 byte parameter block
+	ldx #<ParamBlk
+	ldy #>ParamBlk		//8 byte parameter block
 	lda #$07		//short tone
 	jsr OSWORD
 	pla 
@@ -851,7 +851,7 @@ L_BRS_15D6_161D:
 	ldx _xreg
 	clc 
 	lda _destptr_l 
-	adc  _scrolloff_l
+	adc _scrolloff_l
 	sta _destptr_l 
 	sta pDot_l,X 
 	lda _destptr_h 
@@ -1096,7 +1096,7 @@ LZRight:
 
 L_BRS_174C_173D:
 
-	sta  _dxedge
+	sta _dxedge
 	sec 
 	lda _BeamX,X 
 	sbc _dxwin
@@ -1113,7 +1113,7 @@ L_BRS_175C_1757:
 	sta _destptr_h 
 	clc 
 	lda #$04
-	adc  _dxedge
+	adc _dxedge
 	sta _laserc
 
 L_BRS_176B_1799:
@@ -1203,7 +1203,7 @@ L_BRS_17DC_17A3:
 	sta _destptr_h 
 	clc 
 	lda #$01
-	adc  _dxedge
+	adc _dxedge
 	sta _laserc
 	beq LaserNext
 	bmi LaserNext
@@ -1426,7 +1426,7 @@ L_BRS_1904_18FF:
 
 	lda #$0A
 	jsr PlaySound
-	dec  _humanc
+	dec _humanc
 	bne L_BRS_1903_190B
 	jmp RMSurface
 
@@ -1532,7 +1532,7 @@ MSpawn:
 	sta _count
 	cpy #LANDER
 	bne L_BRS_19B9_19B1
-	lda  _humanc
+	lda _humanc
 	bne L_BRS_19B9_19B5
 	ldy #MUTANT
 
@@ -1852,7 +1852,7 @@ L_BRS_1B65_1B61:
 FrameNoCheck:
 
 	lda _no_planet
-	ora  _humanc
+	ora _humanc
 	bne L_BRS_1B97_1B72
 	lda #TRUE
 	sta _no_planet
@@ -2849,7 +2849,7 @@ UpdateShip:
 
 Hitchhiker:
 
-	lda  _hikerc
+	lda _hikerc
 	beq L_BRS_215D_2134
 	lda #MAN
 	sta Unit + HITCH 
@@ -3290,7 +3290,7 @@ L_BRS_23BB_23BD:
 	cmp #$95
 	bne L_BRS_23CF_23C1
 	lda #$A		//#of humanoids
-	sta  _humanc
+	sta _humanc
 	lda #FALSE
 	sta _no_planet
 	ldx #(PAL_SURF|GREEN)
@@ -3299,7 +3299,7 @@ L_BRS_23BB_23BD:
 L_BRS_23CF_23C1:
 
 	cld 
-	lda  _humanc
+	lda _humanc
 	bne L_BRS_23D6_23D2
 	ldx #(PAL_SURF|BLACK)
 
@@ -3406,7 +3406,7 @@ L_BRS_2467_2460:
 	lda #ID_MIN
 	sta _id
 	lda #$00
-	sta  _hikerc
+	sta _hikerc
 	lda #KEYDOWN
 	sta _inkey_space
 	sta _inkey_enter
@@ -3783,7 +3783,7 @@ L_BRS_26A5_269C:
 RepaintDigit:
 
 	ldy #$00
-	lda  _scrolloff_l
+	lda _scrolloff_l
 	bpl L_BRS_26B5_26B1
 	ldy #$FF
 
@@ -3793,7 +3793,7 @@ L_BRS_26B5_26B1:
 	clc 
 	lda _digitp_l
 	sta _srcptr_l 
-	adc  _scrolloff_l
+	adc _scrolloff_l
 	sta _destptr_l 
 	sta _digitp_l
 	lda _digitp_h
@@ -3918,7 +3918,7 @@ L_BRS_2753_274F:
 InitZP:
 
 	lda #$0A		//#of humanoids
-	sta  _humanc
+	sta _humanc
 	lda #$08		//starting difficulty
 	sta dXMinInit + LANDER 
 	lda #$00
@@ -4194,7 +4194,7 @@ InputName:
 	adc #$03
 	sta ParamBlk 
 	lda #$00
-	adc #$07
+	adc #>HiScore
 	sta ParamBlk + 1 
 	lda #$14
 	sta ParamBlk + 2 
@@ -4244,11 +4244,11 @@ DoneLevel:
 	jsr XYToVidP
 	lda #FALSE
 	sta _leading0
-	lda  _humanbonus
+	lda _humanbonus
 	jsr PaintBCD
 	lda #$00
 	jsr PaintBCD
-	lda  _humanc
+	lda _humanc
 	beq L_BRS_29A9_2982
 	sta _count
 	ldx #$19
@@ -4261,7 +4261,7 @@ BonusLoop:
 	jsr XYToVidP
 	ldx #MAN
 	jsr XBLTSprite
-	ldy  _humanbonus
+	ldy _humanbonus
 	ldx #$00
 	jsr AddScore
 	ldx #$04
@@ -4764,8 +4764,11 @@ AiVector:		//vector table for ai routines
 	// .byte $BC,$11,$DA,$11,$61,$13,$F8,$13
 	// .byte $2D,$14,$36,$14,$B1,$14,$68,$15
 	// .byte $BF,$11,$BF,$11,$BF,$11
+	.word ai_ship,ai_lander,ai_mutant,ai_baiter
+	.word ai_bomber,ai_swarmer,ai_human,ai_pod
+	.word ai_object,ai_object,ai_object
 //$2E1B		two unused bytes	
-	.byte $00,$00
+	.word $00
 Spawnc:
 //$2E1D		Duint8_t[8]  Unit spawn counts
 	.byte $00,$05,$00,$00,$04,$00,$00,$00
@@ -4795,13 +4798,15 @@ dYRangeInit:
 	.byte $3F,$00,$00,$07,$0F,$07,$00,$07
 StringV_l:
 //$2E65		LSB of string pointers
-	.byte $8D,$90,$A9,$B5,$F5,$39,$3F
+//	.byte $8D,$90,$A9,$B5,$F5,$39,$3F
+	.byte <string0,<string1,<string2,<string3,<string4,<string5,<string6
 //$2E6C		13 unused bytes	
 	.byte $9C,$C4,$C4,$C8,$3C,$AC,$A4,$8C
 	.byte $78,$CC,$90,$8C,$A0
 StringV_h:
 //$2E79		MSB of string pointers
-	.byte $2E,$2E,$2E,$2E,$2E,$2F,$2F
+//	.byte $2E,$2E,$2E,$2E,$2E,$2F,$2F
+	.byte >string0,>string1,>string2,>string3,>string4,>string5,>string6
 //$2E80		13 unused bytes
 	.byte $00,$00,$03,$00,$00,$00,$00,$00
 	.byte $00,$FC,$00,$00,$03
@@ -4821,7 +4826,7 @@ string2:
 	.byte $20,$20,$F1,$F2
 string3:
 //$2EB5		string_t[64]  Message string #3
-//Planetoid Hall of Fame - double height
+//Planetoid Hall of Fame - double height (mode7)
 	.byte $3F,$16,$07,$81,$9D,$83,$8D,$1F
 	.byte $09,$00,$50,$6C,$61,$6E,$65,$74
 	.byte $6F,$69,$64,$20,$48,$61,$6C,$6C
@@ -4846,6 +4851,7 @@ string4:
 string5:
 //$2F39		string_t[6]  Message string #5
 	.byte $05,$20,$2E,$2E,$2E,$20
+// '...'
 string6:
 //$2F3F		string_t[81]  Message string #6
 //Today's Greatest
@@ -4885,7 +4891,7 @@ string6:
 	.byte $00,$00,$00,$00,$00,$0B,$0B,$3F
 
 Boot:
-
+VRAM:
 	tsx 
 	stx _gameover_sp
 	lda #<NewBRKVector
@@ -4909,16 +4915,15 @@ NewBRKVector:		//$3012
 	sta WaitVSync + 2
 
 Hook:
-
 	sei 
 	lda IRQ1V		//IRQ1V - Main interrupt vector
 	sta _irq1v 
-	lda IRQ1V+1 
+	lda IRQ1V + 1 
 	sta _irq1v + 1
 	lda #<IRQHook		//New IRQ = $1103
 	sta IRQ1V 
-	lda #>IRQHook+1
-	sta IRQ1V+1 
+	lda #>IRQHook + 1
+	sta IRQ1V + 1 
 	cli 
 
 MakeScores:
