@@ -96,7 +96,7 @@ L_BRS_115B_1157:
 
 L_BRS_1161_117F:
 
-	jsr AIUnit
+	jsr ai_unit
 	ldx _id
 
 L_BRS_1166_1169:
@@ -120,10 +120,10 @@ L_BRS_1178_1174:
 	bne L_BRS_1161_117F
 	rts 
 
-AIAlt:
+ai_alt:
 
 	ldx _id_alt
-	jsr AIUnit
+	jsr ai_unit
 	inx 
 	cpx #ID_ALT3 + 1
 	bne L_BRS_118E_118A
@@ -134,7 +134,7 @@ L_BRS_118E_118A:
 	stx _id_alt
 	rts 
 
-AIUnit:
+ai_unit:
 
 	lda Unit,X 
 	bpl L_BRS_11BB_1194
@@ -166,14 +166,14 @@ L_BRS_11BB_1198:
 
 	rts
 
-AIShip:	 
+ai_ship:	 
 
 	jmp MoveUnit
 
-AIKugel:
-AI250:
-AI500:
-AIObject:
+ai_kugel:
+ai_250:
+ai_500:
+ai_object:
 
 	ldy Param,X 
 	iny 
@@ -194,14 +194,14 @@ L_BRS_11D9_11D4:
 
 	rts
 
-AILander:
+ai_lander:
 
 	lda  _humanc
 	bne L_BRS_11E9_11DC
 	jsr EraseUnit
 	lda #MUTANT
 	sta Unit,X 
-	jmp AIMutant
+	jmp ai_mutant
 
 L_BRS_11E9_11DC:
 
@@ -231,7 +231,7 @@ L_BRS_11FB_11F6:
 	jsr EraseUnit
 	lda #MUTANT
 	sta Unit,X 
-	jmp AIMutant
+	jmp ai_mutant
 
 L_BRS_121D_126D:
 L_BRS_121D_1274:
@@ -246,7 +246,7 @@ L_BRS_1222_1240:
 
 L_BRS_1227_1202:
 
-	jmp AIUpdate
+	jmp ai_update
 
 L_BRS_122A_1209:
 
@@ -294,7 +294,7 @@ L_BRS_1266_1239:
 	lda #$00
 	sta dY_l,X 
 	sta dY_h,X 
-	jmp AIUpdate
+	jmp ai_update
 
 L_BRS_1286_1279:
 
@@ -332,7 +332,7 @@ L_BRS_1286_1279:
 
 L_BRS_12CF_128F:
 
-	jmp AIUpdate
+	jmp ai_update
 
 J1VE:
 
@@ -386,7 +386,7 @@ J1VF:
 	bcc MoveUp
 	cmp #$1E
 	bcs MoveDown
-	jmp AIUpdate
+	jmp ai_update
 
 MoveUp:
 
@@ -408,7 +408,7 @@ L_BRS_1339_1333:
 	lda Y_h,X 
 	sbc _temp_h 
 	sta Y_h,X 
-	jmp AIUpdate
+	jmp ai_update
 
 L_BRS_134D_1331:
 L_BRS_134D_1337:
@@ -420,9 +420,9 @@ L_BRS_134D_1337:
 	lda Y_h,X 
 	adc _temp_h 
 	sta Y_h,X 
-	jmp AIUpdate
+	jmp ai_update
 
-AIMutant:
+ai_mutant:
 
 	lda #$19
 	jsr ShootChance
@@ -479,7 +479,7 @@ L_BRS_13A9_13A3:
 	sta dX_l,X 
 	tya 
 	sta dX_h,X 
-	jmp AIUpdate
+	jmp ai_update
 
 L_BRS_13B3_137C:
 
@@ -537,14 +537,14 @@ L_BRS_13F7_13F3:
 
 	rts
 
-AIBaiter:	 
+ai_baiter:	 
 
 	lda #$28
 	jsr ShootChance
 	lda Param,X 
 	beq L_BRS_1408_1400
 	dec Param,X 
-	jmp AIUpdate
+	jmp ai_update
 
 L_BRS_1408_1400:
 
@@ -562,15 +562,15 @@ L_BRS_1408_1400:
 	rol dX_h,X 
 	asl dX_l,X 
 	rol dX_h,X 
-	jmp AIUpdate
+	jmp ai_update
 
-AIBomber:	
+ai_bomber:
 
 	jsr MineChance
 	jsr DYSine
-	jmp AIUpdate
+	jmp ai_update
 
-AISwarmer:	
+ai_swarmer:	
 
 	jsr DYSine
 	sec 
@@ -587,7 +587,7 @@ L_BRS_144D_1449:
 
 	cmp #$14
 	bcs L_BRS_1454_144F
-	jmp AIUpdate
+	jmp ai_update
 
 L_BRS_1454_144F:
 
@@ -608,7 +608,7 @@ L_BRS_1468_1461:
 
 	lda #$1E
 	jsr ShootChance
-	jmp AIUpdate
+	jmp ai_update
 
 DYSine:
 
@@ -649,7 +649,7 @@ L_BRS_1497_147A:
 	sta dY_h,X 
 	rts
 
-AIHuman:	 
+ai_human:	 
 
 	lda Param,X 
 	bne L_BRS_14B9_14B4
@@ -662,7 +662,7 @@ L_BRS_14B9_14B4:
 	lda #LANDER
 	jsr IsLinked
 	bne L_BRS_14FC_14C1
-	jmp AIUpdate
+	jmp ai_update
 
 L_BRS_14C6_14B9:
 
@@ -690,7 +690,7 @@ L_BRS_14D8_14D5:
 	lda #$0F
 	jsr PlaySound
 	jsr Score500
-	jmp AIUpdate
+	jmp ai_update
 
 L_BRS_14FC_14C1:
 
@@ -711,7 +711,7 @@ L_BRS_1509_14C7:
 	sta dY_h,X 
 	jsr GetYSurf
 	cmp Y_h,X 
-	bcc AIUpdate
+	bcc ai_update
 	lda dY_h,X 
 	cmp #$FB
 	bcs L_BRS_152C_1527
@@ -746,7 +746,7 @@ Walk:
 	bmi L_BRS_1565_155A
 	cmp #$08
 	bpl L_BRS_1562_155E
-	bmi AIUpdate
+	bmi ai_update
 
 L_BRS_1562_155E:
 
@@ -756,8 +756,8 @@ L_BRS_1565_155A:
 
 	jmp MoveDown
 
-AIUpdate:
-AIPod:
+ai_update:
+ai_pod:
 
 	ldx _id
 	jsr MoveUnit
@@ -3970,12 +3970,12 @@ FrameAll:
 	jsr RepaintDigit
 	jsr RepaintMap
 	ldx #ID_BULLET1
-	jsr AIUnit
+	jsr ai_unit
 	ldx #ID_BULLET2
-	jsr AIUnit
-	jsr AIAlt
-	jsr AIAlt
-	jsr AIAlt
+	jsr ai_unit
+	jsr ai_alt
+	jsr ai_alt
+	jsr ai_alt
 	jsr AIBatch
 	jsr NextFrame
 	jsr ScrollSurface
@@ -4728,8 +4728,8 @@ Points_l:
 	.byte $25,$00,$00
 Points_h:
 //$2D63,X	bcd_t[11] unit point scores (x100)
-	.byte $00,$01,$01,$01,$02
-	.byte $02,$00,$10,$00,$00,$00
+	.byte $00,$01,$01,$01,$02,$02,$00,$10
+	.byte $00,$00,$00
 DoWarp:
 //$2D6E,Y	bool[11] unit 'warp in' animation
 	.byte $00,$01,$01,$01,$01,$00,$00,$01
@@ -4761,9 +4761,9 @@ RotColour:
 	.byte $01,$03,$04//Red,Yellow,Blue
 AiVector:		//vector table for ai routines
 //$2E05	
-	.byte $BC,$11,$DA,$11,$61,$13,$F8,$13
-	.byte $2D,$14,$36,$14,$B1,$14,$68,$15
-	.byte $BF,$11,$BF,$11,$BF,$11
+	// .byte $BC,$11,$DA,$11,$61,$13,$F8,$13
+	// .byte $2D,$14,$36,$14,$B1,$14,$68,$15
+	// .byte $BF,$11,$BF,$11,$BF,$11
 //$2E1B		two unused bytes	
 	.byte $00,$00
 Spawnc:
@@ -4823,11 +4823,11 @@ string3:
 //$2EB5		string_t[64]  Message string #3
 //Planetoid Hall of Fame - double height
 	.byte $3F,$16,$07,$81,$9D,$83,$8D,$1F
-	.byte _originp_h,$00,$50,$6C,$61,$6E,$65,$74
+	.byte $09,$00,$50,$6C,$61,$6E,$65,$74
 	.byte $6F,$69,$64,$20,$48,$61,$6C,$6C
 	.byte $20,$6F,$66,$20,$46,$61,$6D,$65
 	.byte $1F,$00,$01,$81,$9D,$83,$8D,$1F
-	.byte _originp_h,$01,$50,$6C,$61,$6E,$65,$74
+	.byte $09,$01,$50,$6C,$61,$6E,$65,$74
 	.byte $6F,$69,$64,$20,$48,$61,$6C,$6C
 	.byte $20,$6F,$66,$20,$46,$61,$6D,$65
 string4:
@@ -4988,23 +4988,21 @@ TableOne:
 	.byte $2E,$31,$30,$00,$0D
 DefHigh:
 // $3088	hiscore_t[24]  Default high score
-	.byte $00,$10,$00
-	.byte $41,$63,$6F,$72,$6E,$73,$6F,$66
-	.byte $74,$0D
-	.byte $03,$06,$06,$06,$06,$03
-	.byte $03,$F3,$03,$0C,$0E,$0E,$0C,$03
-	.byte $03,$F3,$53,$53,$53,$53,$53,$02
-	.byte $02,$00,$41,$C7,$41,$82,$C3,$C7
-	.byte $C3,$00,$00,$82,$00,$AA,$AA,$FF
-	.byte $FF,$FF,$FF,$00,$00,$05,$00,$05
-	.byte $05,$05,$00,$00,$00,$0F,$05,$0F
-	.byte $00,$0F,$00,$00,$00,$0C,$08,$0C
-	.byte $00,$0C,$00,$00,$00,$09,$01,$09
-	.byte _originp_h,$09,$00,$00,$00,$03,$01,$01
-	.byte $01,$03,$00,$00,$00,$0F,$0A,$0A
-	.byte $0A,$0F,$00,$00,$00,$0A,$0A,$0A
-	.byte $0A,$0A,$00,$00,$09,$88,$09,$92
-	.byte _originp_h,$9C,$09,$A6,$09
+	.byte $00,$10,$00,$41,$63,$6F,$72,$6E
+	.byte $73,$6F,$66,$74,$0D,$03,$06,$06
+	.byte $06,$06,$03,$03,$F3,$03,$0C,$0E
+	.byte $0E,$0C,$03,$03,$F3,$53,$53,$53
+	.byte $53,$53,$02,$02,$00,$41,$C7,$41
+	.byte $82,$C3,$C7,$C3,$00,$00,$82,$00
+	.byte $AA,$AA,$FF,$FF,$FF,$FF,$00,$00
+	.byte $05,$00,$05,$05,$05,$00,$00,$00
+	.byte $0F,$05,$0F,$00,$0F,$00,$00,$00
+	.byte $0C,$08,$0C,$00,$0C,$00,$00,$00
+	.byte $09,$01,$09,$09,$09,$00,$00,$00
+	.byte $03,$01,$01,$01,$03,$00,$00,$00
+	.byte $0F,$0A,$0A,$0A,$0F,$00,$00,$00
+	.byte $0A,$0A,$0A,$0A,$0A,$00,$00,$09
+	.byte $88,$09,$92,$09,$9C,$09,$A6,$09
 
 .pseudopc $0E00 {
 
