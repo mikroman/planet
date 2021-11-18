@@ -121,4 +121,4 @@
 .label OSWORD		=	$fff1
 .label OSBYTE		=	$fff4
 .label IRQ1V		=	$204
-//.label VRAM		    =	$3000
+.label VRAM		    =	$3000
