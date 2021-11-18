@@ -1,11 +1,3 @@
-// Acornsoft Planetoid, BBC Micro
-// Written by Neil Raine, 1982
-// 6502 disassembly by rainbow
-// 2020.02.08
-// <djrainbow50@gmail.com>
-// https://github.com/r41n60w/planetoid-disasm
-// https://github.com/mikroman/planet (Kick Assembler version by mikroman)
-
 #import "constants.asm"
 #import "labelsII.asm"
 
@@ -3563,7 +3555,7 @@ PrintN:
 
 	stx _savedx
 	sty _savedy
-	tax 
+	tax			// message#
 	lda StringV_l,X 
 	sta _destptr_l 
 	lda StringV_h,X 
@@ -3576,8 +3568,8 @@ L_BRS_258F_2597:
 
 	iny 
 	lda (_destptr),Y 
-	jsr OSWRCH
-	cpy _strlen
+	jsr OSWRCH	//print character
+	cpy _strlen	//} while
 	bne L_BRS_258F_2597
 	ldx _savedx
 	ldy _savedy
@@ -4606,14 +4598,8 @@ L_BRS_2B9F_2B9A:
 
 	rts
 
-//$2BA0-2FEF global vars x2 (vsync,rotatec)
-//(32unused bytes)
-	.byte $00,$08,$00,$08,$00,$08,$00,$00
-	.byte $00,$00,$04,$04,$04,$08,$08,$04
-	.byte $04,$04,$04,$04,$04,$04,$04,$04
-	.byte $04,$04,$04,$04,$04,$04,$04,$04
 SurfQuad:	
-//Packed 2-bit surface tiles (256) 4/byte;Corresponds to YSurface[256]
+		//Packed 2-bit surface tiles (256) 4/byte;Corresponds to YSurface[256]
 	.byte $2A,$00,$55,$55,$65,$66,$9A,$A9
 	.byte $00,$01,$44,$55,$55,$55,$A5,$2A
 	.byte $80,$2A,$08,$42,$55,$55,$55,$66
@@ -4624,8 +4610,8 @@ SurfQuad:
 	.byte $19,$50,$40,$14,$54,$55,$55
 ImgLaser:
 	.byte $95//unused
-//Laser bam sprite data (tail to head)
-//colours: $00 bb, $10 bF, $20 Fb, $30 FF
+		//Laser beam sprite data (tail to head)
+		//colours: $00 bb, $10 bF, $20 Fb, $30 FF
 	.byte $00,$00,$30,$00,$20,$30,$10,$30
 	.byte $00,$30,$30,$20,$30,$30,$00,$30
 	.byte $30,$30,$30,$30,$30,$30,$30,$30
@@ -4636,326 +4622,235 @@ ImgLaser:
 	.byte $30,$30,$30,$30,$30,$30,$30,$30
 	.byte $30,$30,$30,$30,$30,$30,$30,$30
 	.byte $30,$30,$30,$30,$30,$30,$30,$30
-WarpX:		//warp animation points
-//$2C50 x_offset_t
+WarpX:	//warp animation points
+		//x_offset_t
 	.byte $50,$50,$28,$00,$00,$00,$28,$50
 WarpY:
-//$2C50 y_offset_t
+		//y_offset_t
 	.byte $60,$C0,$C0,$C0,$60,$00,$00,$00
 BlastX:
-//$2C60 Blast animation point Xscr coord offsets
+		//Blast animation point Xscr coord offsets
 	.byte $02,$04,$00,$FC,$FE,$FC,$00,$04
 BlastY:
 	.byte $00,$0C,$06,$0C,$00,$F4,$FA,$F4
 FlashPal:
-//$2C70 PAL_FLASH (flashing) colour palettes
+		//PAL_FLASH (flashing) colour palettes
 	.byte $45,$42,$46,$43,$47,$43,$46,$42
 HyperKeys:
-//$2C78	hyperspace keycodes
+		//hyperspace keycodes
 	.byte $AC,$BB,$CA,$BA,$AA,$9B,$AB
-	.byte $28	// (unused)
-	//     G   Y   U   J   N   B   H
+		//GYUJNBH
 ParamBlk:
-//$2C80	OSWORD parameter block, 4 signed words
+		//OSWORD parameter block, 4 signed words
 	.byte $25,$24,$20,$1D,$1C,$19,$19,$19
 
-//sound parameters
-// MSB of Channel/HSFC (first SOUND param)
-//   Hold always off
-// LSB of Channel/HSFC (first SOUND param)
-//   Flush always on
-// LSB of Amplitude (second SOUND param)
-//   [0,-15] amplitude / [1-4] envelope #
-// LSB of Pitch (third SOUND param)
-// LSB of Duration (fourth SOUND param)
+		//sound parameters
+		// MSB of Channel/HSFC (first SOUND param)
+		//   Hold always off
+		// LSB of Channel/HSFC (first SOUND param)
+		//   Flush always on
+		// LSB of Amplitude (second SOUND param)
+		//   [0,-15] amplitude / [1-4] envelope #
+		// LSB of Pitch (third SOUND param)
+		// LSB of Duration (fourth SOUND param)
 HoldSync:
-//$2C88
+
 	.byte $02,$02,$02,$00,$01,$01,$01,$01
 	.byte $01,$01,$01,$01,$01,$01,$00,$00
 	.byte $01,$01,$00,$00
+
 FlushChan:
-//$2C9C	FlushChan
+
 	.byte $11,$12,$13,$10,$11,$10,$11,$10
 	.byte $11,$10,$11,$10,$11,$10,$12,$12
 	.byte $11,$10,$13,$12
+
 AmplEnvel:
-//$2CB0
+
 	.byte $F6,$F6,$F6,$00,$01,$F4,$02,$F6
 	.byte $01,$F6,$01,$F1,$01,$F1,$03,$03
 	.byte $01,$F1,$04,$03
+
 Pitch:
-//$2CC4
+
 	.byte $00,$00,$00,$00,$E6,$07,$64,$07
 	.byte $FF,$07,$B4,$07,$82,$07,$32,$14
 	.byte $FF,$03,$00,$AA
+
 Duration:
-//$2CD8
+
 	.byte $32,$32,$32,$00,$FF,$1E,$FF,$0C
 	.byte $FF,$02,$FF,$11,$FF,$28,$08,$08
 	.byte $FF,$3C,$23,$08
-//$2CEC	unused
-	.byte $28,$25,$25,$24,$20,$1D,$1D,$1D
-	.byte $1D,$1D,$1D,$1D,$1D,$1D,$1D,$1D
-	.byte $1D,$1D,$1D,$1E
 
 SpriteLen:
-//$2D00,X	Sprite data lengths for :
-//		SHIP LAND MUT BAIT BOMB SWAR MAN POD
+		//Sprite data lengths for:
+		//SHIP LAND MUT BAIT BOMB SWAR MAN POD
 	.byte $30,$20,$20,$14,$18,$0C,$08,$18
 	.byte $02,$28,$28
-//		KUGL S250 S500
+		//KUGL S250 S500
 SpriteV_l:
-//$2D0B,X	LB of vectors to sprite data
-	// .byte $C0,$2C,$4C,$6C,$94,$AC,$A0,$A8
-	// .byte $B8,$BE,$CE
-.byte	<imgShipR,<imgLander,<imgMutant,<imgBaiter
-.byte	<imgBomber,<imgSwarmer,<imgMan,<imgPod
-.byte	<imgKugel,<img250,<img500
+		//LB of vectors to sprite data
+	.byte	<imgShipR,<imgLander,<imgMutant,<imgBaiter
+	.byte	<imgBomber,<imgSwarmer,<imgMan,<imgPod
+	.byte	<imgKugel,<img250,<img500
 SpriteV_h:
-//$2D16,X	HB of vectors to sprite data
-	// .byte $0F,$10,$10,$10,$10,$10,$0F,$0F
-	// .byte $10,$10,$10
-.byte	>imgShipR,>imgLander,>imgMutant,>imgBaiter
-.byte	>imgBomber,>imgSwarmer,>imgMan,>imgPod
-.byte	>imgKugel,>img250,>img500	
+		//HB of vectors to sprite data
+	.byte	>imgShipR,>imgLander,>imgMutant,>imgBaiter
+	.byte	>imgBomber,>imgSwarmer,>imgMan,>imgPod
+	.byte	>imgKugel,>img250,>img500	
 
 imgDot:
-//$2D21,X	Minimap dots (2x2px) for each sprite #
-//		  SHIP    LAND    MUT     BAIT
+		//Minimap dots (2x2px) for each sprite #
+		//SHIP    LAND    MUT     BAIT
 	.byte $FF,$FF,$8A,$88,$A2,$88,$88,$88
-//		  BOMB    SWAR    MAN     POD
+		//BOMB    SWAR    MAN     POD
 	.byte $A2,$A2,$82,$8A,$A8,$A8,$20,$20
-//		  KUGL    S250    S500	
+		//KUGL    S250    S500	
 	.byte $00,$D8,$00,$00,$00,$FF
-//imgDotR:
-//2D37		imgDot[] dots, >> 1 pixel to the right
+		//imgDotR:
+		//imgDot[] dots, >> 1 pixel to the right
 	.byte $FF,$FF,$45,$44,$51,$44,$44,$44
 	.byte $51,$51,$41,$45,$54,$54,$10,$10
 	.byte $00,$6C,$00,$00,$00,$7F
 SpriteMaxY:
-//$2D4D		Sprite height bitmask (-> _heightmask)
-//		SHIP LAND MUT BAIT BOMB SWAR MAN POD
+		//Sprite height bitmask (-> _heightmask)
+		//SHIP LAND MUT BAIT BOMB SWAR MAN POD
 	.byte $07,$07,$07,$03,$07,$03,$0F,$07
 	.byte $03,$07,$07
-//		KUGL S250 S500
+		//KUGL S250 S500
 Points_l:
-//$2D58,X	bcd_t unit point scores (x1)
+		//bcd_t unit point scores (x1)
 	.byte $00,$50,$50,$50,$00,$50,$00,$00
 	.byte $25,$00,$00
 Points_h:
-//$2D63,X	bcd_t unit point scores (x100)
-//		SHIP LAND  MUT BAIT BOMB SWAR MAN POD
+		//bcd_t unit point scores (x100)
+		//SHIP LAND  MUT BAIT BOMB SWAR MAN POD
 	.byte $00,$01,$01,$01,$02,$02,$00,$10
 	.byte $00,$00,$00
-//		KUGL S250 S500
+		//KUGL S250 S500
 DoWarp:
-//$2D6E,Y	bool unit 'warp in' animation
-//		SHIP LAND  MUT BAIT BOMB SWAR MAN POD
+		//bool unit 'warp in' animation
+		//SHIP LAND  MUT BAIT BOMB SWAR MAN POD
 	.byte $00,$01,$01,$01,$01,$00,$00,$01
 	.byte $00,$00,$00
-//		KUGL S250 S500
-//$2d79		135 unused bytes
-	.fill $87,0
-	// .byte $BB,$CA,$BA,$AA,$9B,$AB,$60
-	// .byte $10,$01,$F1,$FF,$07,$00,$28,$00
-	// .byte $02,$02,$02,$00,$01,$01,$01,$01
-	// .byte $01,$01,$01,$01,$01,$01,$00,$00
-	// .byte $01,$01,$00,$00,$11,$12,$13,$10
-	// .byte $11,$10,$11,$10,$11,$10,$11,$10
-	// .byte $11,$10,$12,$12,$11,$10,$13,$12
-	// .byte $F6,$F6,$F6,$00,$01,$F4,$02,$F6
-	// .byte $01,$F6,$01,$F1,$01,$F1,$03,$03
-	// .byte $01,$F1,$04,$03,$00,$00,$00,$00
-	// .byte $E6,$07,$64,$07,$FF,$07,$B4,$07
-	// .byte $82,$07,$32,$14,$FF,$03,$00,$AA
-	// .byte $32,$32,$32,$00,$FF,$1E,$FF,$0C
-	// .byte $FF,$02,$FF,$11,$FF,$28,$08,$08
-	// .byte $FF,$3C,$23,$08,$20,$38,$30,$30
-	// .byte $30,$0D,$35,$31,$30,$20,$21,$2C
-	// .byte $4D,$31,$39,$47,$3F,$58,$57,$80
-vsync:			//$2E00	uint8_t vsync count -> irq_hook()
+		//KUGL S250 S500
+vsync:	//uint8_t vsync count -> irq_hook()
 	.byte $30
-rotatec:		//uint8_t  index into RotColour
+rotatec://uint8_t  index into RotColour
 	.byte $00
 RotColour:		//colour_t  PAL_ROTx colours
 	.byte $01,$03,$04
-//		Red,Yellow,Blue
-AiVector:		//vector table for ai routines
-//$2E05	
-	// .byte $BC,$11,$DA,$11,$61,$13,$F8,$13
-	// .byte $2D,$14,$36,$14,$B1,$14,$68,$15
-	// .byte $BF,$11,$BF,$11,$BF,$11
+		//Red,Yellow,Blue
+AiVector://vector table for ai routines
 	.word ai_ship,ai_lander,ai_mutant,ai_baiter
 	.word ai_bomber,ai_swarmer,ai_human,ai_pod
 	.word ai_object,ai_object,ai_object
-//$2E1B		two unused bytes	
-	.word $00
 Spawnc:
-//$2E1D		Duint8_t[8]  Unit spawn counts
+		//Duint8_t[8]  Unit spawn counts
 	.byte $00,$05,$00,$00,$04,$00,$00,$00
-//		  SHP LND MUT BAI BOM SWM MAN POD
+		//SHP LND MUT BAI BOM SWM MAN POD
 XMinInit:
-//$2e25		xpos_t[8]  Initial unit minimum X
+		//xpos_t[8]  Initial unit minimum X
 	.byte $07,$00,$40,$00,$40,$00,$00,$00
 XRangeInit:
-//$2E2D		uint8_t[8]  Initial unit X range
+		//uint8_t[8]  Initial unit X range
 	.byte $00,$FF,$7F,$0F,$07,$00,$FF,$3F
 YMinInit:
-//$2E35		ypos_t[8]  Initial unit minimum Y
+		//ypos_t[8]  Initial unit minimum Y
 	.byte $64,$B4,$00,$00,$00,$00,$0A,$00
-//		  SHP LND MUT BAI BOM SWM MAN POD	
+		//SHP LND MUT BAI BOM SWM MAN POD	
 YRangeInit:
-//$2E3D		uint8_t[8]  Initial unit Y range
+		//uint8_t[8]  Initial unit Y range
 	.byte $00,$00,$FF,$FF,$FF,$1F,$00,$FF
 dXMinInit:
-//$2E45		xoffset_t[8] Init minimum dX (abs)
+		//xoffset_t[8] Init minimum dX (abs)
 	.byte $02,$18,$00,$0A,$18,$32,$04,$08
 dXRangeInit:
-//$2E4D		uint8_t[8]  Initial unit dX range
+		//uint8_t[8]  Initial unit dX range
 	.byte $07,$0F,$00,$07,$0F,$07,$00,$07
-//		  SHP LND MUT BAI BOM SWM MAN POD
+		//SHP LND MUT BAI BOM SWM MAN POD
 dYMinInit:
-//$2E55		yoffset_t[8] Init minimum dY (abs)
+		//yoffset_t[8] Init minimum dY (abs)
 	.byte $0A,$00,$00,$0A,$00,$18,$00,$08
 dYRangeInit:
-//$2E5D		uint8_t[8]  Initial unit dY range	
+		//uint8_t[8]  Initial unit dY range	
 	.byte $3F,$00,$00,$07,$0F,$07,$00,$07
 StringV_l:
-//$2E65		LSB of string pointers
-//	.byte $8D,$90,$A9,$B5,$F5,$39,$3F
+		//LSB of string pointers
 	.byte <string0,<string1,<string2,<string3,<string4,<string5,<string6
-//$2E6C		13 unused bytes	
-	.byte $9C,$C4,$C4,$C8,$3C,$AC,$A4,$8C
-	.byte $78,$CC,$90,$8C,$A0
 StringV_h:
-//$2E79		MSB of string pointers
-//	.byte $2E,$2E,$2E,$2E,$2E,$2F,$2F
+		//MSB of string pointers
 	.byte >string0,>string1,>string2,>string3,>string4,>string5,>string6
-//$2E80		13 unused bytes
-	.byte $00,$00,$03,$00,$00,$00,$00,$00
-	.byte $00,$FC,$00,$00,$03
 string0:
-//$2E8D		Message string #0
-//		length,clear text,restore default pallete
+		//Message string #0
+		//length,text clr,restore default pallete
 	.byte $02,$0C,$14
 string1:
-//$2E90		Message string #1
-//		length,txt clr,PAL_FLASH,cursor,(4,12)
+		//Message string #1
+		//length,txt clr,PAL_FLASH,cursor,(4,12)
 	.byte $18,$11,$04,$1F,$04,$0C,$E0,$E1
 	.byte $E2,$E3,$E4,$E5,$20,$E6,$E7,$E8
 	.byte $E9,$EA
-//		cursor,(7,15)
+		//cursor,(7,15)
 	.byte $1F,$07,$0F,$EB,$EC,$ED,$EE
 string2:
-//$2EA9		Message string #2
-//		length,cursor,(7,15),txt clr #4
+		//Message string #2
+		//length,cursor,(7,15),txt clr #4
 	.byte $0B,$1F,$07,$0F,$11,$04,$EF,$F0
 	.byte $20,$20,$F1,$F2
 string3:
-//$2EB5		Message string #3
-//Planetoid Hall of Fame - double height (mode7)
-//		  length,mode,7,double height
-	.byte $3F,$16,$07,$81,$9D,$83,$8D
-	.byte $1F,$09,$00
-//		  cursor,(9,0)
-//		  Planetoid Hall of Fame
-	.byte $50,$6C,$61,$6E,$65,$74,$6F,$69
-	.byte $64,$20,$48,$61,$6C,$6C,$20,$6F
-	.byte $66,$20,$46,$61,$6D,$65
-//		  cursor,(0,1),double height
-	.byte $1F,$00,$01,$81,$9D,$83,$8D
-//		  cursor,(9,1)
-	.byte $1F,$09,$01
-//		  Planetoid Hall of Fame
+		//Message string #3
+		//length,mode,7,double height
+	.byte $1B,$16,$07
+	.byte $1F,$05,$00
+		//cursor,(5,0)
+		//Planetoid Hall of Fame
 	.byte $50,$6C,$61,$6E,$65,$74,$6F,$69
 	.byte $64,$20,$48,$61,$6C,$6C,$20,$6F
 	.byte $66,$20,$46,$61,$6D,$65
 string4:
-//$2EF5		Message string #4
-//		  length,cursor,(11,3),double height
-	.byte $43,$1F,$0B,$03,$86,$8D
-//Congratulations
+		//Message string #4
+		//length,cursor,(11,3)
+	.byte $24,$1F,$08,$03
+		//Congratulations
 	.byte $43,$6F,$6E,$67,$72,$61,$74,$75
 	.byte $6C,$61,$74,$69,$6F,$6E,$73
-//		  cursor,(11,4),double height
-	.byte $1F,$0B,$04,$86,$8D
-	.byte $43,$6F,$6E,$67,$72,$61,$74,$75
-	.byte $6C,$61,$74,$69,$6F,$6E,$73
-//		  cursor,(8,23),double height
-	.byte $1F,$08,$17,$86,$88
-//Please enter your name	
-	.byte $50,$6C,$65,$61,$73,$65,$20,$65
+		//cursor,(8,23)
+	.byte $1F,$08,$17
+		//enter your name	
+	.byte $65
 	.byte $6E,$74,$65,$72,$20,$79,$6F,$75
 	.byte $72,$20,$6E,$61,$6D,$65
 string5:
-//$2F39		Message string #5
-// length,' ... '
+		//Message string #5
+		//length,' ... '
 	.byte $05,$20,$2E,$2E,$2E,$20
 string6:
-//$2F3F		Message string #6
-//		  length,cursor,(10,3),double height
-	.byte $50,$1F,$0A,$03,$8D,$86
-//Today's Greatest
+		//Message string #6
+		//length,cursor,(10,3)
+	.byte $2B,$1F,$0A,$04
+		//Today's Hi
 	.byte $54,$6F,$64,$61,$79,$27,$73,$20
-	.byte $47,$72,$65,$61,$74,$65,$73,$74
-//		  cursor,(10,4),double height
-	.byte $1F,$0A,$04,$8D,$86
-	.byte $54,$6F,$64,$61,$79,$27,$73,$20
-	.byte $47,$72,$65,$61,$74,$65,$73,$74
-//		  cursor,(2,23),flashing
+	.byte $48,$69
+		//cursor,(2,23),flashing
 	.byte $1F,$02,$17,$86,$88
-//Press the SPACE BAR to play again
-	.byte $50,$72,$65,$73,$73,$20,$74,$68
-	.byte $65,$20,$53,$50,$41,$43,$45,$20
-	.byte $42,$41,$52,$20,$74,$6F,$20,$70
+		//Press SPACE to play again
+	.byte $50,$72,$65,$73,$73
+	.byte $20,$53,$50,$41,$43,$45,$20
+	.byte $74,$6F,$20,$70
 	.byte $6C,$61,$79,$20,$61,$67,$61,$69
 	.byte $6E
-//$2F90
-.fill $70,0
-	// .byte $30,$20,$20,$30,$00,$00,$30,$00
-	// .byte $20,$20,$20,$20,$20,$20,$20,$00
 
-	// .byte $CC,$CD,$CD,$CC,$F3,$51,$51,$51
-	// .byte $00,$10,$10,$C3,$C3,$10,$10,$00
-
-	// .byte $82,$92,$92,$C3,$C3,$92,$92,$82
-	// .byte $00,$00,$00,$82,$82,$00,$00,$00
-
-	// .byte $15,$3F,$15,$11,$11,$11,$33,$11
-	// .byte $00,$2A,$3F,$3F,$37,$33,$33,$33
-
-	// .byte $00,$00,$00,$2A,$3F,$3F,$3F,$37
-	// .byte $00,$00,$00,$00,$00,$3F,$3F,$3F
-
-	// .byte $00,$00,$00,$00,$00,$07,$07,$3F
-	// .byte $00,$00,$00,$00,$00,$08,$1D,$3F
-	
-	// .byte $00,$00,$00,$00,$00,$04,$2E,$3F
-	// .byte $00,$00,$00,$00,$00,$0B,$0B,$3F
+* = $3000 "BOOT"
 
 Boot:
 
-	tsx 
-	stx _gameover_sp
-	lda #<NewBRKVector
-	sta BRKVector
-	lda #<NewBRKVector + 1
-	sta BRKVector + 1 
-	lda NULL		//00 Read host OS
+	lda #$00
+	ldx #$01
 	jsr OSBYTE
-
-NewBRKVector:		//$3012
-
-	ldx _gameover_sp 
-	txs 
-	jsr SystemCheck
-	bne Hook
-	lda ALT_VSYNC_LB
-	sta VsyncAddress1 + 1
-	sta WaitVSync + 1
-	lda ALT_VSYNC_HB
-	sta VsyncAddress1 + 2
-	sta WaitVSync + 2
+	ldx #$FF
+	txs
 
 Hook:
 	sei 
@@ -4963,7 +4858,7 @@ Hook:
 	sta _irq1v 
 	lda IRQ1V + 1 
 	sta _irq1v + 1
-	lda #<IRQHook		//New IRQ = $1103
+	lda #<IRQHook	//New IRQ = $1103
 	sta IRQ1V 
 	lda #>IRQHook + 1
 	sta IRQ1V + 1 
@@ -4989,158 +4884,12 @@ mkScLoop:
 	bcc YReset
 	jmp Main
 
-
-SystemCheck:
-
-	jsr Check2
-	bne L_BRS_305D_305A
-	rts 
-
-L_BRS_305D_305A:
-
-	lda #$30
-	sta TableOne + 1
-	lda #$31
-	sta TableOne + 2
-
-Check2:
-
-	ldy #$00
-
-L_BRS_3069_3070:
-
-	iny 
-	lda (ErrorMessVec),Y
-	beq L_BRS_3080_306C
-	cmp #$30
-	bne L_BRS_3069_3070
-	ldx #$00
-
-L_BRS_3074_307D:
-
-	iny 
-	lda TableOne,X 
-	beq L_BRS_307F_3078
-	inx 
-	cmp (ErrorMessVec),Y 
-	beq L_BRS_3074_307D
-
-L_BRS_307F_3078:
-
-	rts 
-
-L_BRS_3080_306C:
-
-	lda #$01
-	rts
-TableOne:	
-	.byte $2E,$31,$30,$00,$0D
 DefHigh:
-// $3088	hiscore_t[24]  Default high score
+		//hiscore_t[24]  Default high score
 	.byte $00,$10,$00,$41,$63,$6F,$72,$6E
-	.byte $73,$6F,$66,$74,$0D
-	.fill $6B,0
-	// ,$03,$06,$06
-	// .byte $06,$06,$03,$03,$F3,$03,$0C,$0E
-	// .byte $0E,$0C,$03,$03,$F3,$53,$53,$53
-	// .byte $53,$53,$02,$02,$00,$41,$C7,$41
-	// .byte $82,$C3,$C7,$C3,$00,$00,$82,$00
-	// .byte $AA,$AA,$FF,$FF,$FF,$FF,$00,$00
-	// .byte $05,$00,$05,$05,$05,$00,$00,$00
-	// .byte $0F,$05,$0F,$00,$0F,$00,$00,$00
-	// .byte $0C,$08,$0C,$00,$0C,$00,$00,$00
-	// .byte $09,$01,$09,$09,$09,$00,$00,$00
-	// .byte $03,$01,$01,$01,$03,$00,$00,$00
-	// .byte $0F,$0A,$0A,$0A,$0F,$00,$00,$00
-	// .byte $0A,$0A,$0A,$0A,$0A,$00,$00,$09
-	// .byte $88,$09,$92,$09,$9C,$09,$A6,$09
+	.byte $73,$6F,$66,$74,$0D,$03,$06,$06
+	.byte $06,$06,$03,$03,$F3,$03,$0C,$0E
 
-.pseudopc $0E00 {
+	.fill $B1,0
 
-SurfaceY:
-//SurfaceY $3100-$3300 these three pages get moved to $0E00
-
-	.byte $22,$26,$2A,$2C,$28,$24,$20,$1C,$19,$19,$19,$19,$19,$19,$19,$19
-	.byte $19,$19,$1A,$1D,$1E,$21,$22,$25,$26,$2A,$2D,$2E,$31,$32,$36,$3A
-	.byte $3C,$38,$34,$30,$2D,$2C,$28,$24,$20,$1D,$1C,$19,$19,$19,$19,$19
-	.byte $19,$19,$19,$19,$19,$19,$19,$19,$19,$19,$1A,$1E,$22,$26,$2A,$2C
-
-	.byte $28,$24,$20,$1E,$22,$26,$2A,$2C,$28,$26,$28,$24,$22,$24,$20,$1D
-	.byte $1D,$1D,$1D,$1D,$1D,$1D,$1D,$1D,$1D,$1D,$1D,$1D,$1E,$21,$22,$25
-	.byte $26,$29,$2A,$2D,$2E,$31,$32,$36,$3A,$3D,$3E,$42,$45,$46,$48,$44
-	.byte $42,$44,$40,$3E,$40,$3C,$39,$39,$38,$34,$31,$30,$2D,$2C,$29,$28
-
-	.byte $25,$24,$20,$1D,$1C,$19,$19,$19,$19,$19,$19,$19,$19,$19,$19,$19
-	.byte $19,$19,$19,$19,$19,$19,$19,$19,$19,$19,$19,$19,$1A,$1E,$22,$24
-	.byte $20,$1E,$20,$1E,$20,$1E,$20,$1C,$18,$14,$11,$11,$11,$12,$16,$19
-	.byte $19,$19,$19,$19,$19,$19,$19,$19,$19,$19,$19,$19,$19,$19,$19,$19
-
-	.byte $19,$19,$19,$19,$19,$19,$19,$19,$19,$19,$19,$19,$19,$19,$19,$19
-	.byte $19,$1A,$1D,$1E,$21,$22,$26,$2A,$2D,$2E,$31,$32,$35,$36,$39,$3A
-	.byte $3D,$3E,$41,$40,$3C,$38,$35,$35,$34,$30,$2C,$29,$28,$25,$25,$24
-	.byte $20,$1D,$1D,$1D,$1D,$1D,$1D,$1D,$1D,$1D,$1D,$1D,$1D,$1D,$1D,$1E
-
-imgDigit:
-//imgDigit
-	.byte $30,$20,$20,$20,$20,$20,$30,$00,$20,$20,$20,$20,$20,$20,$20,$00//0
-	.byte $10,$30,$10,$10,$10,$10,$30,$00,$00,$00,$00,$00,$00,$00,$20,$00//1
-	.byte $30,$00,$00,$30,$20,$20,$30,$00,$20,$20,$20,$20,$00,$00,$20,$00//2
-	.byte $30,$00,$00,$30,$00,$00,$30,$00,$20,$20,$20,$20,$20,$20,$20,$00//3
-	.byte $20,$20,$20,$30,$00,$00,$00,$00,$20,$20,$20,$20,$20,$20,$20,$00//4
-	.byte $30,$20,$20,$30,$00,$00,$30,$00,$20,$00,$00,$20,$20,$20,$20,$00//5
-	.byte $30,$20,$20,$30,$20,$20,$30,$00,$20,$00,$00,$20,$20,$20,$20,$00//6
-	.byte $30,$00,$00,$00,$00,$00,$00,$00,$20,$20,$20,$20,$20,$20,$20,$00//7
-	.byte $30,$20,$20,$30,$20,$20,$30,$00,$20,$20,$20,$20,$20,$20,$20,$00//8
-	.byte $30,$20,$20,$30,$00,$00,$30,$00,$20,$20,$20,$20,$20,$20,$20,$00//9
-imgMan:	
-	.byte $CC,$CD,$CD,$CC,$F3,$51,$51,$51//$0FA0 human 
-imgPod:	
-	.byte $00,$10,$10,$C3,$C3,$10,$10,$00,$82,$92,$92,$C3,$C3,$92,$92,$82//$0FA8 Pod
-	.byte $00,$00,$00,$82,$82,$00,$00,$00
-imgShipR:
-	.byte $15,$3F,$15,$11,$11,$11,$33,$11,$00,$2A,$3F,$3F,$37,$33,$33,$33//$0FC0 ship R
-	.byte $00,$00,$00,$2A,$3F,$3F,$3F,$37,$00,$00,$00,$00,$00,$3F,$3F,$3F
-	.byte $00,$00,$00,$00,$00,$07,$07,$3F,$00,$00,$00,$00,$00,$08,$1D,$3F
-imgShipL:
-	.byte $00,$00,$00,$00,$00,$04,$2E,$3F,$00,$00,$00,$00,$00,$0B,$0B,$3F//$0FF0 ship L
-	.byte $00,$00,$00,$00,$00,$3F,$3F,$3F,$00,$00,$00,$15,$3F,$3F,$3F,$3B
-	.byte $00,$15,$3F,$3F,$3B,$33,$33,$33,$2A,$3F,$2A,$22,$22,$22,$37,$22
-imgSurface:
-	.byte $28,$28,$14,$14// \ down slope ($1020 planet surface tiles)
-	.byte $00,$28,$3C,$14// - flat
-	.byte $14,$14,$28,$28// / up slope
-imgLander:
-	.byte $00,$45,$CC,$CC,$44,$00,$44,$88,$CF,$CF,$44,$44,$CC,$CE,$44,$44//$102C Lander
-	.byte $8A,$CF,$44,$44,$CC,$8A,$44,$00,$00,$00,$88,$88,$00,$00,$00,$88
-imgMutant:
-	.byte $00,$51,$CC,$CC,$44,$00,$44,$88,$0C,$0C,$51,$51,$F3,$D9,$51,$51//$104C mutant
-	.byte $88,$F6,$44,$44,$E6,$88,$44,$00,$00,$00,$88,$88,$00,$00,$00,$88
-imgBaiter:
-	.byte $00,$44,$CD,$44//$106C baiter
-	.byte $CC,$C0,$CA,$CC
-	.byte $CC,$C0,$CF,$CC
-	.byte $CC,$C0,$C5,$CC
-	.byte $00,$88,$CE,$88
-
-	.byte $00,$00,$00,$00,$00//5 unused bytes
-
-	.byte $50,$E5,$76,$A8,$A2,$01,$A5,$76,$20,$73,$1D,$4C,$FB,$20,$68//$1088 fragment
-imgBomber:
-	.byte $51,$03,$06,$06,$06,$06,$03,$03,$F3,$03,$0C,$0E,$0E,$0C,$03,$03//$1094 bomber
-	.byte $F3,$53,$53,$53,$53,$53,$02,$02
-imgSwarmer:
-	.byte $00,$41,$C7,$41,$82,$C3,$C7,$C3,$00,$00,$82,$00//$10AC swarmer
-imgKugel:
-	.byte $AA,$AA//$10B8 Kugel (bullet/mine)
-imgShrapnel:
-	.byte $FF,$FF,$FF,$FF//$10BA shrapnel
-img250:
-	.byte $00,$00,$05,$00,$05,$05,$05,$00,$00,$00,$0F,$05,$0F,$00,$0F,$00//$10BE 250
-img500:
-	.byte $00,$00,$0C,$08,$0C,$00,$0C,$00,$00,$00,$09,$01,$09,$09,$09,$00//$10CE 500 (250/500)
-
-	.byte $00,$00,$03,$01,$01,$01,$03,$00,$00,$00,$0F,$0A,$0A,$0A,$0F,$00
-	.byte $00,$00,$0A,$0A,$0A,$0A,$0A,$00
-
-	.byte $00,$09,$88,$09,$92,$09,$9C,$09,$A6,$09//unused
-}
+#import "0E00.asm"
