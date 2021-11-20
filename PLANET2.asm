@@ -7,24 +7,24 @@
 
 IRQHook:
 
-	lda #%00000010
+	lda #%00000010		//check if vertical sync occurred
 	bit SYS6522 + 13	//systemVIA Interrupt Flag Register
-	beq L_BRS_110D_1108
+	beq !+
 
 VsyncAddress1:
 
-	inc vsync 
+	inc vsync
 
-L_BRS_110D_1108:
+!:
 
-	jmp (_irq1v)
+	jmp (_irq1v)		//Enter IRQ in ROM
 
 WaitVSync:
 
 	lda vsync 
-	cmp _vsync0 
+	cmp _vsync0
 	beq WaitVSync
-	sta _vsync0 
+	sta _vsync0			//vblank has begun
 	rts 
 
 IsVSync:
@@ -50,7 +50,7 @@ Out6845:
 StartTimer:
 
 	lda #%10000000		//one shot mode
-	sta USR6522 + 11	//userVIAAuxiliaryControlRegister:
+	sta USR6522 + 11	//userVIAAuxiliaryControlRegister
 	stx USR6522 + 4		//userVIATimer1CounterLow=#$80
 	sty USR6522 + 5		//userVIATimer1CounterHigh=#$14
 	rts 
@@ -70,46 +70,45 @@ AIBatch:
 	lda #$4D
 	sta _max_xscr
 	lda _scrolloff_l
-	bpl L_BRS_1159_1150
+	bpl rrange
 	clc 
 	adc #$4D
 	sta _max_xscr
-	bne L_BRS_115B_1157
+	bne batchinit
 
-L_BRS_1159_1150:
+rrange:
 
 	sta _min_xscr
 
-L_BRS_115B_1157:
+batchinit:
 
 	lda _batch
 	sta _batchc
 	ldx _id
 
-L_BRS_1161_117F:
+batchloop:
 
 	jsr ai_unit
 	ldx _id
 
-L_BRS_1166_1169:
+nextid:
 
 	inx 
 	cpx #HITCH
-	beq L_BRS_1166_1169
+	beq nextid
 	cpx #ID_MAX + 1
-	bne L_BRS_1178_116D
+	bne batchid
 	ldx #ID_MIN
 	lda Anim 
-	beq L_BRS_1178_1174
+	beq batchid
 	ldx #SHIP
 
-L_BRS_1178_116D:
-L_BRS_1178_1174:
+batchid:
 
 	stx _id
 	jsr IsVSync
 	dec _batchc
-	bne L_BRS_1161_117F
+	bne batchloop
 	rts 
 
 ai_alt:
@@ -118,10 +117,10 @@ ai_alt:
 	jsr ai_unit
 	inx 
 	cpx #ID_ALT3 + 1
-	bne L_BRS_118E_118A
+	bne altid
 	ldx #ID_ALT1
 
-L_BRS_118E_118A:
+altid:
 
 	stx _id_alt
 	rts 
@@ -129,23 +128,23 @@ L_BRS_118E_118A:
 ai_unit:
 
 	lda Unit,X 
-	bpl L_BRS_11BB_1194
+	bpl noai
 	asl 
 	tay 
-	bmi L_BRS_11BB_1198
+	bmi noai
 	lsr 
 	sta Unit,X 
 	lda Anim,X 
-	beq L_BRS_11AE_11A1
-	bmi L_BRS_11AB_11A3
+	beq aijump
+	bmi aiexplode
 	jsr AnimFrame
 	jmp MMUpdate
 
-L_BRS_11AB_11A3:
+aiexplode:
 
 	jmp AnimFrame
 
-L_BRS_11AE_11A1:
+aijump:
 
 	lda AiVector,Y 
 	sta _destptr_l 
@@ -153,8 +152,7 @@ L_BRS_11AE_11A1:
 	sta _destptr_h 
 	jmp (_destptr) 
 
-L_BRS_11BB_1194:
-L_BRS_11BB_1198:
+noai:
 
 	rts
 
@@ -172,30 +170,30 @@ ai_object:
 	tya 
 	sta Param,X 
 	cpy #$A0
-	bne L_BRS_11CE_11C9
+	bne aisprmove
 	jmp EraseUnit
 
-L_BRS_11CE_11C9:
+aisprmove:
 
 	jsr MoveUnit
 	lda pNext_h,X 
-	bne L_BRS_11D9_11D4
+	bne aispr_ret
 	jmp EraseUnit
 
-L_BRS_11D9_11D4:
+aispr_ret:
 
 	rts
 
 ai_lander:
 
 	lda _humanc
-	bne L_BRS_11E9_11DC
+	bne ldrshoot
 	jsr EraseUnit
 	lda #MUTANT
 	sta Unit,X 
 	jmp ai_mutant
 
-L_BRS_11E9_11DC:
+ldrshoot:
 
 	lda #$0A
 	jsr ShootChance
@@ -204,18 +202,18 @@ L_BRS_11E9_11DC:
 	and #%00111111
 	tay 
 	pla 
-	bne L_BRS_11FB_11F6
+	bne param_maybe
 	jmp J1VE
 
-L_BRS_11FB_11F6:
+param_maybe:
 
-	bmi L_BRS_1235_11FB
+	bmi j1v_c
 	lda Y_h,X 
 	cmp #$BE
-	bcc L_BRS_1227_1202
+	bcc toj7v_0
 	lda #MAN
 	jsr IsLinked
-	bne L_BRS_122A_1209
+	bne j1v_b
 	tya 
 	tax 
 	jsr KillUnit
@@ -225,42 +223,41 @@ L_BRS_11FB_11F6:
 	sta Unit,X 
 	jmp ai_mutant
 
-L_BRS_121D_126D:
-L_BRS_121D_1274:
+j1v_a:
 
 	ldy #LANDER
 	jsr InitDXY
 
-L_BRS_1222_1240:
+BackParamx:
 
 	lda #$00
 	sta Param,X 
 
-L_BRS_1227_1202:
+toj7v_0:
 
 	jmp ai_update
 
-L_BRS_122A_1209:
+j1v_b:
 
 	jsr EraseUnit
 	lda #LANDER
 	sta Unit,X 
 	jmp InitUnit
 
-L_BRS_1235_11FB:
+j1v_c:
 
 	lda Param,X 
 	asl 
-	bmi L_BRS_1266_1239
+	bmi j1v_d
 	lda #MAN
 	jsr IsUnlinked
-	bne L_BRS_1222_1240
+	bne BackParamx
 	lda X_h,X 
 	cmp X_h,Y 
-	beq L_BRS_124D_1248
+	beq !+
 	jmp J1VF
 
-L_BRS_124D_1248:
+!:
 
 	lda #$FC
 	sta dY_h,X 
@@ -272,29 +269,29 @@ L_BRS_124D_1248:
 	ora #%01000000
 	sta Param,X 
 
-L_BRS_1266_1239:
+j1v_d:
 
 	lda Unit,Y 
 	and #%01111111
 	cmp #MAN
-	bne L_BRS_121D_126D
+	bne j1v_a
 	lda Param,Y 
 	and #%11000000
-	bne L_BRS_121D_1274
+	bne j1v_a
 	lda Param,Y 
-	beq L_BRS_1286_1279
+	beq !+
 	lda #$00
 	sta dY_l,X 
 	sta dY_h,X 
 	jmp ai_update
 
-L_BRS_1286_1279:
+!:
 
 	lda Y_h,X 
 	sec 
 	sbc #$0A
 	cmp Y_h,Y 
-	bcs L_BRS_12CF_128F
+	bcs toj7v_1
 	sta Y_h,Y 
 	lda dXMinInit + LANDER
 	lsr 
@@ -322,7 +319,7 @@ L_BRS_1286_1279:
 	txa 
 	sta Param,Y 
 
-L_BRS_12CF_128F:
+toj7v_1:
 
 	jmp ai_update
 
@@ -345,11 +342,11 @@ J1VE:
 	lda dX_h,X 
 	asl 
 	lda _temp 
-	bcc L_BRS_12FC_12F6
+	bcc !+
 	lda #$00
 	sbc _temp 
 
-L_BRS_12FC_12F6:
+!:
 
 	cmp #$32
 	bcs J1VF
@@ -383,15 +380,15 @@ J1VF:
 MoveUp:
 
 	bit _temp_h 
-	bpl L_BRS_134D_1331
-	bmi L_BRS_1339_1333
+	bpl yadd
+	bmi ysub
 
 MoveDown:
 
 	bit _temp_h 
-	bmi L_BRS_134D_1337
+	bmi yadd
 
-L_BRS_1339_1333:
+ysub:
 
 	sec 
 	lda Y_l,X 
@@ -402,8 +399,7 @@ L_BRS_1339_1333:
 	sta Y_h,X 
 	jmp ai_update
 
-L_BRS_134D_1331:
-L_BRS_134D_1337:
+yadd:
 
 	clc 
 	lda Y_l,X 
@@ -417,25 +413,24 @@ L_BRS_134D_1337:
 ai_mutant:
 
 	lda #$19
-	jsr ShootChance
+	jsr ShootChance	//1:10 odds
 	lda pSprite_h,X 
-	beq L_BRS_1377_1369
+	beq !+
 	jsr Random
 	cmp #$14
-	bcs L_BRS_1377_1370
+	bcs !+	//1:13 odds
 	lda #$10
 	jsr PlaySound
 
-L_BRS_1377_1369:
-L_BRS_1377_1370:
+!:
 
 	jsr GetXDisph
 	cmp #$0A
-	bpl L_BRS_13B3_137C
+	bpl !++
 	cmp #$EC
-	bmi L_BRS_13CA_1380
+	bmi NearShip
 
-L_BRS_1382_13BC:
+j1382:
 
 	jsr ABSYDisp
 
@@ -443,11 +438,11 @@ J1385:
 
 	ldy #$06
 	lda #$00
-	bcs L_BRS_138F_1389
+	bcs Above
 	ldy #$FA
 	lda #$00
 
-L_BRS_138F_1389:
+Above:
 
 	sta dY_l,X 
 	tya 
@@ -462,24 +457,24 @@ J1396:
 	ldy #$03
 	lda #$50
 	plp 
-	bpl L_BRS_13A9_13A3
+	bpl !+
 	ldy #$FD
 	lda #$B0
 
-L_BRS_13A9_13A3:
+!:
 
 	sta dX_l,X 
 	tya 
 	sta dX_h,X 
 	jmp ai_update
 
-L_BRS_13B3_137C:
+!:
 
 	cmp #$32
-	bpl L_BRS_13CA_13B5
+	bpl NearShip
 	jsr ABSYDisp
 	cmp #$28
-	bcs L_BRS_1382_13BC
+	bcs j1382
 	jsr ABSYDisp
 	php 
 	pla 
@@ -488,8 +483,7 @@ L_BRS_13B3_137C:
 	plp 
 	jmp J1385
 
-L_BRS_13CA_1380:
-L_BRS_13CA_13B5:
+NearShip:
 
 	jsr Random
 	and #$01
@@ -503,11 +497,11 @@ GetXDisph:
 	lda _ddx_h
 	asl 
 	lda X_h,X 
-	bcc L_BRS_13E3_13DD
+	bcc FacingLeft
 	tya 
 	ldy X_h,X 
 
-L_BRS_13E3_13DD:
+FacingLeft:
 
 	sty _temp 
 	sec 
@@ -522,23 +516,23 @@ ABSYDisp:
 	pha 
 	asl 
 	pla 
-	bpl L_BRS_13F7_13F3
+	bpl Negative
 	eor #%11111111
 
-L_BRS_13F7_13F3:
+Negative:
 
 	rts
 
 ai_baiter:	 
 
 	lda #$28
-	jsr ShootChance
+	jsr ShootChance	//1:6 odds
 	lda Param,X 
-	beq L_BRS_1408_1400
+	beq Baitcount
 	dec Param,X 
 	jmp ai_update
 
-L_BRS_1408_1400:
+Baitcount:
 
 	jsr Random
 	and #%00000111
@@ -570,34 +564,32 @@ ai_swarmer:
 	sbc X_h + SHIP 
 	sta _temp 
 	eor dX_h,X 
-	bmi L_BRS_1457_1445
+	bmi !++
 	lda _temp 
-	bpl L_BRS_144D_1449
+	bpl !+
 	eor #%11111111
 
-L_BRS_144D_1449:
+!:
 
 	cmp #$14
-	bcs L_BRS_1454_144F
+	bcs !+
 	jmp ai_update
 
-L_BRS_1454_144F:
+!:
 
 	jmp J1396
 
-L_BRS_1457_1445:
+!:
 
 	lda pSprite_h,X 
-	beq L_BRS_1468_145A
+	beq !+
 	jsr Random
 	cmp #$0F
-	bcs L_BRS_1468_1461
+	bcs !+
 	lda #$13
 	jsr PlaySound
 
-L_BRS_1468_145A:
-L_BRS_1468_1461:
-
+!:
 	lda #$1E
 	jsr ShootChance
 	jmp ai_update
@@ -609,7 +601,7 @@ DYSine:
 	lda Y_h,X 
 	sec 
 	sbc #$62
-	bcs L_BRS_1497_147A
+	bcs uppersine
 	eor #%11111111
 	clc 
 	adc #$01
@@ -625,7 +617,7 @@ DYSine:
 	sta dY_h,X 
 	rts 
 
-L_BRS_1497_147A:
+uppersine:
 
 	asl 
 	rol _temp 
@@ -644,31 +636,31 @@ L_BRS_1497_147A:
 ai_human:	 
 
 	lda Param,X 
-	bne L_BRS_14B9_14B4
+	bne manlink
 	jmp Walk
 
-L_BRS_14B9_14B4:
+manlink:
 
-	bmi L_BRS_14C6_14B9
+	bmi manfall
 	tay 
 	lda #LANDER
 	jsr IsLinked
-	bne L_BRS_14FC_14C1
+	bne startfall
 	jmp ai_update
 
-L_BRS_14C6_14B9:
+manfall:
 
 	asl 
-	bmi L_BRS_1509_14C7
+	bmi falling
 	stx _xreg
 	ldx #HITCH
 	jsr GetYSurf
 	ldx _xreg
 	cmp Y_h + HITCH 
-	bcs L_BRS_14D8_14D5
+	bcs rescued
 	rts 
 
-L_BRS_14D8_14D5:
+rescued:
 
 	dec _hikerc
 	lda X_h + HITCH 
@@ -684,7 +676,7 @@ L_BRS_14D8_14D5:
 	jsr Score500
 	jmp ai_update
 
-L_BRS_14FC_14C1:
+startfall:
 
 	lda #$FF
 	sta Param,X 
@@ -692,7 +684,7 @@ L_BRS_14FC_14C1:
 	sta dY_l,X 
 	sta dY_h,X 
 
-L_BRS_1509_14C7:
+falling:
 
 	sec 
 	lda dY_l,X 
@@ -706,10 +698,10 @@ L_BRS_1509_14C7:
 	bcc ai_update
 	lda dY_h,X 
 	cmp #$FB
-	bcs L_BRS_152C_1527
+	bcs landsafe
 	jmp KillUnit
 
-L_BRS_152C_1527:
+landsafe:
 
 	lda #$00
 	sta Param,X 
@@ -735,16 +727,16 @@ Walk:
 	sec 
 	sbc Y_h,X 
 	cmp #$04
-	bmi L_BRS_1565_155A
+	bmi walkdown
 	cmp #$08
-	bpl L_BRS_1562_155E
+	bpl walkup
 	bmi ai_update
 
-L_BRS_1562_155E:
+walkup:
 
 	jmp MoveUp
 
-L_BRS_1565_155A:
+walkdown:
 
 	jmp MoveDown
 
@@ -767,7 +759,7 @@ PlaySound:
 	lda HoldSync,X 
 	sta _temp 
 
-L_BRS_157F_15AF:
+sndloop:
 
 	lda HoldSync,X 
 	sta ParamBlk + 1 
@@ -790,7 +782,7 @@ L_BRS_157F_15AF:
 	tax 
 	inx 
 	dec _temp 
-	bpl L_BRS_157F_15AF
+	bpl sndloop
 	pla 
 	tay 
 	pla 
@@ -803,10 +795,10 @@ InsParam:
 	iny 
 	asl 
 	lda #$00
-	bcc L_BRS_15C1_15BD
+	bcc insmsb
 	lda #$FF
 
-L_BRS_15C1_15BD:
+insmsb:
 
 	sta ParamBlk,Y 
 	iny 
@@ -824,17 +816,17 @@ RepaintMap:
 	sta _max_xscr
 	ldx #$1F
 
-L_BRS_15D6_161D:
+rpmaploop:
 
 	stx _xreg
 	lda Unit,X 
-	bpl L_BRS_161A_15DB
+	bpl rpmapnext
 	asl 
-	bmi L_BRS_161A_15DE
+	bmi rpmapnext
 	ldy pDot_l,X 
 	sty _destptr_l 
 	ldy pDot_h,X 
-	beq L_BRS_161A_15E8
+	beq rpmapnext
 	sty _destptr_h 
 	lda Dot,X 
 	tax 
@@ -848,30 +840,28 @@ L_BRS_15D6_161D:
 	sta pDot_l,X 
 	lda _destptr_h 
 	adc _scrolloff_h 
-	bpl L_BRS_160A_1605
+	bpl !+
 	sec 
 	sbc #$50
 
-L_BRS_160A_1605:
+!:
 
 	cmp #$30
-	bcs L_BRS_1610_160C
+	bcs !+
 	adc #$50
 
-L_BRS_1610_160C:
+!:
 
 	sta _destptr_h 
 	sta pDot_h,X 
 	ldx _yreg
 	jsr MMBlit
 
-L_BRS_161A_15DB:
-L_BRS_161A_15DE:
-L_BRS_161A_15E8:
+rpmapnext:
 
 	ldx _xreg
 	dex 
-	bpl L_BRS_15D6_161D
+	bpl rpmaploop
 	pla 
 	sta _max_xscr
 	pla 
@@ -881,10 +871,10 @@ L_BRS_161A_15E8:
 MMBlit:
 
 	lda _destptr_h 
-	bne L_BRS_162B_1628
+	bne hiblit
 	rts 
 
-L_BRS_162B_1628:
+hiblit:
 
 	ldy #$00
 	lda (_destptr),Y 
@@ -896,22 +886,22 @@ L_BRS_162B_1628:
 	sta _srcptr_l 
 	and #%00000111
 	cmp #$07
-	bne L_BRS_1654_1640
+	bne loblit
 	clc 
 	lda _srcptr_l 
 	adc #$78
 	sta _srcptr_l 
 	lda _srcptr_h 
 	adc #$02
-	bpl L_BRS_1652_164D
+	bpl loptr
 	sec 
 	sbc #$50
 
-L_BRS_1652_164D:
+loptr:
 
 	sta _srcptr_h 
 
-L_BRS_1654_1640:
+loblit:
 
 	iny 
 	lda (_srcptr),Y 
@@ -921,13 +911,13 @@ L_BRS_1654_1640:
 
 MMUpdate:
 
-	jsr TimerState
+	jsr TimerState	//wait for raster
 	bpl MMUpdate
 	cpx #ID_MAX + 1
-	bcc L_BRS_1667_1664
+	bcc mmupd2
 	rts 
 
-L_BRS_1667_1664:
+mmupd2:
 
 	lda _min_xscr
 	pha 
@@ -980,10 +970,10 @@ L_BRS_1667_1664:
 	lda Unit,X 
 	asl 
 	plp 
-	bcc L_BRS_16C3_16BF
+	bcc aligned
 	adc #$15
 
-L_BRS_16C3_16BF:
+aligned:
 
 	sta Dot,X 
 	tax 
@@ -998,27 +988,27 @@ KeyFire:
 
 	ldx #KEY_RETURN
 	jsr ScanInkey
-	beq L_BRS_16DA_16D6
+	beq kfire2
 	eor _inkey_enter
 
-L_BRS_16DA_16D6:
+kfire2:
 
 	stx _inkey_enter
-	beq L_BRS_16E7_16DC
+	beq kfire_ret
 	ldx #$03
 
-L_BRS_16E0_16E5:
+kfireloop:
 
 	lda _Laser,X 
-	beq L_BRS_16E8_16E2
+	beq fire_laser
 	dex 
-	bpl L_BRS_16E0_16E5
+	bpl kfireloop
 
-L_BRS_16E7_16DC:
+kfire_ret:
 
 	rts 
 
-L_BRS_16E8_16E2:
+fire_laser:
 
 	stx _xreg
 	lda Y_h + SHIP 
@@ -1031,14 +1021,14 @@ L_BRS_16E8_16E2:
 	dex 
 	lda #$81
 	bit _ddx_h
-	bmi L_BRS_1705_16FC
+	bmi !+
 	txa 
 	clc 
 	adc #$07
 	tax 
 	lda #$01
 
-L_BRS_1705_16FC:
+!:
 
 	pha 
 	txa 
@@ -1077,7 +1067,7 @@ LZRight:
 	sta _offset_h 
 	lda _dxwin
 	ldy _Laser,X 
-	bpl L_BRS_174C_173D
+	bpl lzedge
 	lda #$F8
 	sta _offset_l 
 	lda #$FF
@@ -1086,7 +1076,7 @@ LZRight:
 	lda #$00
 	sbc _dxwin
 
-L_BRS_174C_173D:
+lzedge:
 
 	sta _dxedge
 	sec 
@@ -1094,10 +1084,10 @@ L_BRS_174C_173D:
 	sbc _dxwin
 	sta _BeamX,X 
 	lda _Laser,X 
-	bne L_BRS_175C_1757
+	bne !+
 	jmp LaserNext
 
-L_BRS_175C_1757:
+!:
 
 	lda _pHead_l,X 
 	sta _destptr_l 
@@ -1108,23 +1098,26 @@ L_BRS_175C_1757:
 	adc _dxedge
 	sta _laserc
 
-L_BRS_176B_1799:
+lzloop:
 
 	lda _BeamX,X 
 	ldy _Laser,X 
-	bmi L_BRS_1779_176F
+	bmi llpleft
+
+llpright:
+
 	cmp _max_xscr
 	bpl EraseLaser
 	inc _BeamX,X 
-	bne L_BRS_177F_1777
+	bne llppaint
 
-L_BRS_1779_176F:
+llpleft:
 
 	cmp _min_xscr
 	bmi EraseLaser
 	dec _BeamX,X 
 
-L_BRS_177F_1777:
+llppaint:
 
 	ldy _Head,X 
 	jsr BlitLaser
@@ -1133,21 +1126,20 @@ L_BRS_177F_1777:
 	ldy #$00
 	lda (_destptr),Y 
 	and #%11000000
-	beq L_BRS_1797_178F
+	beq lznext
 	jsr LaserHit
-	bcs L_BRS_1797_1794
+	bcs lznext
 	rts 
 
-L_BRS_1797_178F:
-L_BRS_1797_1794:
+lznext:
 
 	dec _laserc
-	bne L_BRS_176B_1799
+	bne lzloop
 	lda _destptr_l 
 	sta _pHead_l,X 
 	lda _destptr_h 
 	sta _pHead_h,X 
-	bne L_BRS_17DC_17A3
+	bne lzscroll
 
 EraseLaser:
 
@@ -1165,29 +1157,27 @@ EraseLaser:
 	tax 
 	ldy #$00
 
-L_BRS_17BE_17D3:
-L_BRS_17BE_17D9:
-
+elzloop:
 	inx 
 	lda ImgLaser,X 
 	eor (_destptr),Y 
 	sta (_destptr),Y 
 	cpx #$50
-	bne L_BRS_17CC_17C8
+	bne elznext
 	ldx #$4F
 
-L_BRS_17CC_17C8:
+elznext:
 
 	jsr NextPtr
 	lda _destptr_l 
 	cmp _srcptr_l 
-	bne L_BRS_17BE_17D3
+	bne elzloop
 	lda _destptr_h 
 	cmp _srcptr_h 
-	bne L_BRS_17BE_17D9
+	bne elzloop
 	rts 
 
-L_BRS_17DC_17A3:
+lzscroll:
 
 	lda _pTail_l,X 
 	sta _destptr_l 
@@ -1200,14 +1190,14 @@ L_BRS_17DC_17A3:
 	beq LaserNext
 	bmi LaserNext
 
-L_BRS_17EF_17FB:
+tailloop:
 
 	ldy _Tail,X 
 	jsr BlitLaser
 	sta _Tail,X 
 	jsr NextPtr
 	dec _laserc
-	bne L_BRS_17EF_17FB
+	bne tailloop
 	lda _destptr_l 
 	sta _pTail_l,X 
 	lda _destptr_h 
@@ -1216,10 +1206,10 @@ L_BRS_17EF_17FB:
 LaserNext:
 
 	dex 
-	bmi L_BRS_180B_1806
+	bmi !+
 	jmp LZRight
 
-L_BRS_180B_1806:
+!:
 
 	rts 
 
@@ -1243,7 +1233,7 @@ LaserHit:
 	sta _destptr_h 
 	pla 
 	sta _destptr_l 
-	bcs L_BRS_1833_1829
+	bcs lzhit_ret
 	txa 
 	pha 
 	jsr EraseLaser
@@ -1251,7 +1241,7 @@ LaserHit:
 	tax 
 	clc 
 
-L_BRS_1833_1829:
+lzhit_ret:
 
 	rts 
 
@@ -1266,10 +1256,10 @@ BlitLaser:
 	sta (_destptr),Y 
 	pla 
 	cmp #$50
-	bne L_BRS_1847_1843
+	bne !+
 	lda #$4F
 
-L_BRS_1847_1843:
+!:
 
 	rts 
 
@@ -1281,16 +1271,16 @@ NextPtr:
 	sta _destptr_l 
 	lda _destptr_h 
 	adc _offset_h 
-	bpl L_BRS_1857_1853
+	bpl !+
 	lda #$30
 
-L_BRS_1857_1853:
+!:
 
 	cmp #$30
-	bcs L_BRS_185D_1859
+	bcs !+
 	adc #$50
 
-L_BRS_185D_1859:
+!:
 
 	sta _destptr_h 
 	rts 
@@ -1298,10 +1288,10 @@ L_BRS_185D_1859:
 LZCollide:
 
 	cmp #$50
-	bcc L_BRS_1865_1862
+	bcc lzcdinit
 	rts 
 
-L_BRS_1865_1862:
+lzcdinit:
 
 	stx _xreg
 	sta _anim_xscr 
@@ -1309,15 +1299,15 @@ L_BRS_1865_1862:
 	sta _beam_yscr
 	ldx #$02
 
-L_BRS_186F_18E3:
+lzcdloop:
 
 	lda pSprite_h,X 
-	beq L_BRS_18E0_1872
+	beq lzcdnext
 	lda Y_h,X 
 	sec 
 	sbc _beam_yscr
 	cmp #$08
-	bcs L_BRS_18E0_187C
+	bcs lzcdnext
 	lda pSprite_l,X 
 	and #%11111000
 	sta _temp 
@@ -1328,11 +1318,11 @@ L_BRS_186F_18E3:
 	sta _offset_l 
 	lda _destptr_h 
 	sbc pSprite_h,X 
-	bpl L_BRS_1898_1893
+	bpl !+
 	clc 
 	adc #$50
 
-L_BRS_1898_1893:
+!:
 
 	lsr 
 	ror _offset_l 
@@ -1343,7 +1333,7 @@ L_BRS_1898_1893:
 	sta _offset_h 
 	sec 
 
-L_BRS_18A4_18B0:
+!:
 
 	lda _offset_l 
 	sbc #$50
@@ -1351,24 +1341,24 @@ L_BRS_18A4_18B0:
 	lda _offset_h 
 	sbc #$00
 	sta _offset_h 
-	bcs L_BRS_18A4_18B0
+	bcs !-
 	lda _offset_l 
 	adc #$50
 	cmp #$04
-	bcs L_BRS_18E0_18B8
+	bcs lzcdnext
 	lda Anim,X 
-	bne L_BRS_18E0_18BD
+	bne lzcdnext
 	lda Unit,X 
 	asl 
-	bmi L_BRS_18E0_18C3
+	bmi lzcdnext
 	lsr 
 	cmp #MAN
-	bne L_BRS_18D1_18C8
+	bne hitfound
 	lda Param,X 
 	cmp #$80
-	beq L_BRS_18E0_18CF
+	beq lzcdnext
 
-L_BRS_18D1_18C8:
+hitfound:
 
 	lda #$03
 	jsr PlaySound
@@ -1378,16 +1368,10 @@ L_BRS_18D1_18C8:
 	clc 
 	rts 
 
-L_BRS_18E0_1872:
-L_BRS_18E0_187C:
-L_BRS_18E0_18B8:
-L_BRS_18E0_18BD:
-L_BRS_18E0_18C3:
-L_BRS_18E0_18CF:
-
+lzcdnext:
 	inx 
 	cpx #$20
-	bne L_BRS_186F_18E3
+	bne lzcdloop
 	ldx _xreg
 	sec 
 	rts 
@@ -1403,23 +1387,20 @@ KillUnit:
 	pha 
 	jsr KillU2
 	pla 
-	bcs L_BRS_1903_18FB
+	bcs killu_ret
 	cmp #MAN
-	beq L_BRS_1904_18FF
+	beq !+
 	dec _enemyc
 
-L_BRS_1903_18FB:
-L_BRS_1903_190B:
-L_BRS_1903_1918:
-
+killu_ret:
 	rts 
 
-L_BRS_1904_18FF:
+!:
 
 	lda #$0A
 	jsr PlaySound
 	dec _humanc
-	bne L_BRS_1903_190B
+	bne killu_ret
 	jmp RMSurface
 
 KillU2:
@@ -1428,7 +1409,7 @@ KillU2:
 	pha 
 	jsr EraseUnit
 	pla 
-	bcs L_BRS_1903_1918
+	bcs killu_ret
 	sta Unit,X 
 	lda #BLAST
 	sta Anim,X 
@@ -1442,28 +1423,26 @@ EraseUnit:
 	pha 
 	lda Unit,X 
 	asl 
-	bmi L_BRS_199F_192E
+	bmi erasefail
 	cpx #$20
-	bcs L_BRS_194C_1932
+	bcs skipdot
 	ldy pDot_l,X 
 	sty _destptr_l 
 	ldy pDot_h,X 
 	sty _destptr_h 
-	beq L_BRS_194C_193E
+	beq skipdot
 	lda #NULL
 	sta pDot_h,X 
 	lda Dot,X 
 	tax 
 	jsr MMBlit
 
-L_BRS_194C_1932:
-L_BRS_194C_193E:
-
+skipdot:
 	pla 
 	pha 
 	tax 
 	lda Anim,X 
-	bne L_BRS_1967_1952
+	bne nosprite
 	lda pSprite_l,X 
 	sta _destptr_l 
 	lda pSprite_h,X 
@@ -1473,7 +1452,7 @@ L_BRS_194C_193E:
 	tax 
 	jsr XBLTSprite
 
-L_BRS_1967_1952:
+nosprite:
 
 	pla 
 	tax 
@@ -1481,7 +1460,7 @@ L_BRS_1967_1952:
 	lda Unit,X 
 	and #%01111111
 	cmp #POD
-	bne L_BRS_1998_1973
+	bne erasesucc
 	lda X_h,X 
 	sta XMinInit + SWARMER
 	lda Y_h,X 
@@ -1500,14 +1479,14 @@ L_BRS_1967_1952:
 	pla 
 	tax 
 
-L_BRS_1998_1973:
+erasesucc:
 
 	lda #$FF
 	sta Unit,X 
 	clc 
 	rts 
 
-L_BRS_199F_192E:
+erasefail:
 
 	pla 
 	tax 
@@ -1520,68 +1499,59 @@ MSpawn:
 	and #%01111111
 	tay 
 	lda Spawnc,Y 
-	beq L_BRS_19F0_19AB
+	beq mspw_ret
 	sta _count
 	cpy #LANDER
-	bne L_BRS_19B9_19B1
+	bne mspwinit
 	lda _humanc
-	bne L_BRS_19B9_19B5
+	bne mspwinit
 	ldy #MUTANT
 
-L_BRS_19B9_19B1:
-L_BRS_19B9_19B5:
-L_BRS_19B9_19EE:
-
+mspwinit:
 	jsr MSPWFrame
 	ldx #ID_MIN
 
-L_BRS_19BE_19E2:
-L_BRS_19BE_19EA:
-
+mspwloop:
 	lda Unit,X 
 	asl 
-	bpl L_BRS_19DB_19C2
+	bpl mspwnext
 	tya 
 	ora #$80
 	sta Unit,X 
 	jsr InitUnit
 	cpy #BAITER
-	beq L_BRS_19D7_19CF
+	beq !+
 	cpy #MAN
-	beq L_BRS_19D7_19D3
+	beq !+
 	inc _enemyc
 
-L_BRS_19D7_19CF:
-L_BRS_19D7_19D3:
-
+!:
 	dec _count
-	beq L_BRS_19F0_19D9
+	beq mspw_ret
 
-L_BRS_19DB_19C2:
+mspwnext:
 
 	txa 
 	clc 
 	adc #$05
 	tax 
 	cpx #ID_MAX + 1
-	bcc L_BRS_19BE_19E2
+	bcc mspwloop
 	sec 
 	sbc #$1D
 	tax 
 	cpx #$07
-	bne L_BRS_19BE_19EA
+	bne mspwloop
 	bit _spawn_spr
-	bpl L_BRS_19B9_19EE
+	bpl mspwinit
 
-L_BRS_19F0_19AB:
-L_BRS_19F0_19D9:
-
+mspw_ret:
 	rts 
 
 MSPWFrame:
 
 	lda _spawn_spr
-	bmi L_BRS_1A06_19F3
+	bmi noframe
 	pha 
 	lda _count
 	pha 
@@ -1595,16 +1565,16 @@ MSPWFrame:
 	pla 
 	sta _spawn_spr
 
-L_BRS_1A06_19F3:
+noframe:
 
 	rts 
 
 SpawnBait:
 
 	dec _baitdelay_l
-	bne L_BRS_1A23_1A09
+	bne bait_ret
 	dec _baitdelay_h
-	bne L_BRS_1A23_1A0D
+	bne bait_ret
 	lda #$01
 	sta Spawnc + BAITER 
 	lda X_h + SHIP 
@@ -1614,9 +1584,7 @@ SpawnBait:
 	lda #$02
 	sta _baitdelay_h
 
-L_BRS_1A23_1A09:
-L_BRS_1A23_1A0D:
-
+bait_ret:
 	rts 
 
 InitUnit:
@@ -1629,19 +1597,19 @@ InitUnit:
 	jsr ClearData
 	sta pDot_h,X 
 	plp 
-	bpl L_BRS_1A35_1A32
+	bpl !+
 	rts 
 
-L_BRS_1A35_1A32:
+!:
 
 	lda DoWarp,Y 
-	beq L_BRS_1A44_1A38
+	beq !+
 	lda #$01
 	sta Anim,X 
 	lda #$08
 	sta Param,X 
 
-L_BRS_1A44_1A38:
+!:
 
 	jsr Random
 	and XRangeInit,Y 
@@ -1653,10 +1621,10 @@ L_BRS_1A44_1A38:
 	clc 
 	adc YMinInit,Y 
 	cmp #$C0
-	bcc L_BRS_1A61_1A5D
+	bcc !+
 	sbc #$C0
 
-L_BRS_1A61_1A5D:
+!:
 
 	sta Y_h,X 
 
@@ -1686,17 +1654,15 @@ ToVelocity:
 	lda #$00
 	sta _temp_h 
 	jsr Random
-	bpl L_BRS_1AA5_1A98
+	bpl !+
 	sec 
 	lda #$00
 	sbc _temp_l 
 	sta _temp_l 
-	bcs L_BRS_1AA5_1AA1
+	bcs !+
 	dec _temp_h 
 
-L_BRS_1AA5_1A98:
-L_BRS_1AA5_1AA1:
-
+!:
 	lda _temp_l 
 	asl 
 	rol _temp_h 
@@ -1710,7 +1676,7 @@ MSpawnAll:
 
 	ldx #$01
 
-L_BRS_1AB3_1ABD:
+!:
 
 	txa 
 	pha 
@@ -1719,16 +1685,16 @@ L_BRS_1AB3_1ABD:
 	tax 
 	inx 
 	cpx #POD + 1
-	bne L_BRS_1AB3_1ABD
+	bne !-
 	rts 
 
 SmartBomb:
 
 	lda _bombs
-	bne L_BRS_1AC5_1AC2
+	bne !+
 	rts 
 
-L_BRS_1AC5_1AC2:
+!:
 
 	sed
 	sec 
@@ -1761,7 +1727,7 @@ BombScreen:
 
 	ldx #ID_MIN
 
-L_BRS_1AF6_1B32:
+bombloop:
 
 	lda Unit,X 
 	asl 
@@ -1772,7 +1738,7 @@ L_BRS_1AF6_1B32:
 	lda Anim,X 
 	bne BombNext
 	lda pSprite_h,X 
-	bne L_BRS_1B29_1B09
+	bne blowup
 	lda _bomb_pass2
 	beq BombNext
 	lda Unit,X 
@@ -1787,7 +1753,7 @@ L_BRS_1AF6_1B32:
 	sta X_h,X 
 	bne BombNext
 
-L_BRS_1B29_1B09:
+blowup:
 
 	jsr ScoreUnit
 	jsr KillUnit
@@ -1796,45 +1762,43 @@ BombNext:
 
 	inx 
 	cpx #$20
-	bne L_BRS_1AF6_1B32
+	bne bombloop
 	rts 
 
 KeysHyper:
 
 	ldx #$06
 
-L_BRS_1B37_1B45:
+khyploop:
 
 	stx _xreg
 	lda HyperKeys,X 
 	tax 
 	jsr ScanInkey
-	bne L_BRS_1B48_1B40
+	bne hyperspace
 	ldx _xreg
 	dex 
-	bpl L_BRS_1B37_1B45
+	bpl khyploop
 
-L_BRS_1B47_1B4B:
-L_BRS_1B47_1B52:
-
+khyp_ret:
 	rts 
 
-L_BRS_1B48_1B40:
+hyperspace:
 
 	bit Anim 
-	bvs L_BRS_1B47_1B4B
+	bvs khyp_ret
 	lda Param 
 	cmp #$05
-	bcs L_BRS_1B47_1B52
+	bcs khyp_ret
 	jsr Random
 	jsr NewScreen
 	jsr Random
 	ldx #WARP
 	cmp #$28
-	bcs L_BRS_1B65_1B61
+	bcs hypvars
 	ldx #(WARP|HAL)
 
-L_BRS_1B65_1B61:
+hypvars:
 
 	stx Anim + SHIP
 	lda #$08
@@ -1845,11 +1809,11 @@ FrameNoCheck:
 
 	lda _no_planet
 	ora _humanc
-	bne L_BRS_1B97_1B72
+	bne to_frameall
 	lda #TRUE
 	sta _no_planet
 
-L_BRS_1B78_1B95:
+flbgloop:
 
 	iny 
 	tya 
@@ -1867,9 +1831,9 @@ L_BRS_1B78_1B95:
 	jsr DoNFrames
 	pla 
 	tay 
-	bne L_BRS_1B78_1B95
+	bne flbgloop
 
-L_BRS_1B97_1B72:
+to_frameall:
 
 	jmp FrameAll
 
@@ -1877,36 +1841,34 @@ ShootChance:
 
 	sta _temp 
 	lda _dead
-	beq L_BRS_1BA1_1B9E
+	beq !+
 	rts 
 
-L_BRS_1BA1_1B9E:
+!:
 
 	jsr Random
 	cmp _temp 
-	bcs L_BRS_1BC1_1BA6
+	bcs shtch_ret
 	sec 
 	lda X_h + SHIP 
 	sbc X_h,X 
-	bpl L_BRS_1BB8_1BAF
+	bpl !+
 	sta _temp 
 	sec 
 	lda #$00
 	sbc _temp 
 
-L_BRS_1BB8_1BAF:
+!:
 
 	cmp #$28
-	bcs L_BRS_1BC1_1BBA
+	bcs shtch_ret
 	jsr Shoot
-	bcc L_BRS_1BC2_1BBF
+	bcc !+
 
-L_BRS_1BC1_1BA6:
-L_BRS_1BC1_1BBA:
-
+shtch_ret:
 	rts 
 
-L_BRS_1BC2_1BBF:
+!:
 
 	lda #$08
 	jsr PlaySound
@@ -1940,32 +1902,32 @@ TargetLoop:
 
 	lda dY_h,Y 
 	cmp #$03
-	bcc L_BRS_1C07_1C01
+	bcc !+
 	cmp #$FE
-	bcc L_BRS_1C4B_1C05
+	bcc target_ret
 
-L_BRS_1C07_1C01:
+!:
 
 	lda dX_h,Y 
-	beq L_BRS_1C19_1C0A
+	beq !+
 	cmp #$FF
-	bne L_BRS_1C4B_1C0E
+	bne target_ret
 	sec 
 	lda #$00
 	sbc dX_l,Y 
 	jmp ShootSpeed
 
-L_BRS_1C19_1C0A:
+!:
 
 	lda _srcptr_l 
 	ora _srcptr_h
-	beq L_BRS_1C4B_1C1D
+	beq target_ret
 	lda dX_l,Y 
 
 ShootSpeed:
 
 	cmp _shootspeed
-	bcs L_BRS_1C4B_1C24
+	bcs target_ret
 	clc 
 	lda dX_l,Y 
 	adc _srcptr_l 
@@ -1982,11 +1944,7 @@ ShootSpeed:
 	sta dY_h,Y 
 	jmp TargetLoop
 
-L_BRS_1C4B_1C05:
-L_BRS_1C4B_1C0E:
-L_BRS_1C4B_1C1D:
-L_BRS_1C4B_1C24:
-
+target_ret:
 	rts 
 	lda #$08
 	jmp PlaySound
@@ -1994,22 +1952,19 @@ L_BRS_1C4B_1C24:
 MineChance:
 
 	lda pNext_h,X 
-	beq L_BRS_1C70_1C54
+	beq mine_ret
 	jsr Random
 	cmp #$3C
-	bcs L_BRS_1C70_1C5B
+	bcs mine_ret
 	jsr SpawnMisc
-	bcs L_BRS_1C70_1C60
+	bcs mine_ret
 	lda #$00
 	sta dY_l,Y 
 	sta dY_h,Y 
 	sta dX_l,Y 
 	sta dX_h,Y 
 
-L_BRS_1C70_1C54:
-L_BRS_1C70_1C5B:
-L_BRS_1C70_1C60:
-
+mine_ret:
 	rts 
 
 DistDiv64:
@@ -2018,10 +1973,10 @@ DistDiv64:
 	php 
 	lda #$00
 	plp 
-	bpl L_BRS_1C7B_1C77
+	bpl distdiv2
 	lda #$FF
 
-L_BRS_1C7B_1C77:
+distdiv2:
 
 	asl _temp_l 
 	rol 
@@ -2033,22 +1988,20 @@ L_BRS_1C7B_1C77:
 Shoot:
 
 	ldy #ID_BULLET1
-	bne L_BRS_1C8A_1C86
+	bne shootloop
 
 SpawnMisc:
 
 	ldy #ID_ALT1
 
-L_BRS_1C8A_1C86:
-L_BRS_1C8A_1C92:
-
+shootloop:
 	jsr ShootID
-	bcc L_BRS_1C94_1C8D
+	bcc shoot_ret
 	iny 
 	cpy #ID_ALT3 + 1
-	bne L_BRS_1C8A_1C92
+	bne shootloop
 
-L_BRS_1C94_1C8D:
+shoot_ret:
 
 	rts 
 
@@ -2058,7 +2011,7 @@ ShootID:
 	eor #%11000000
 	asl 
 	asl 
-	bcs L_BRS_1CCA_1C9C
+	bcs shtid_ret
 	lda #(UPDATE|KUGEL)
 	sta Unit,Y 
 	lda X_l,X 
@@ -2078,7 +2031,7 @@ ShootID:
 	sta Anim,Y 
 	clc 
 
-L_BRS_1CCA_1C9C:
+shtid_ret:
 
 	rts 
 
@@ -2086,24 +2039,24 @@ Frame:
 
 	ldx #KEY_TAB
 	jsr ScanInkey
-	beq L_BRS_1CD4_1CD0
+	beq tab0
 	eor _inkey_tab
 
-L_BRS_1CD4_1CD0:
+tab0:
 
 	stx _inkey_tab
-	beq L_BRS_1CDB_1CD6
+	beq frame2
 	jsr SmartBomb
 
-L_BRS_1CDB_1CD6:
+frame2:
 
 	jsr KeysHyper
 	jsr FrameNoCheck
 	lda _dead
-	bne L_BRS_1CE6_1CE3
+	bne do_death
 	rts 
 
-L_BRS_1CE6_1CE3:
+do_death:
 
 	lda #(PAL_BG|WHITE)
 	sta _bgpal
@@ -2119,7 +2072,7 @@ L_BRS_1CE6_1CE3:
 	jsr PlaySound
 	ldx #ID_MAX
 
-L_BRS_1D04_1D41:
+shrapsetup:
 
 	jsr ClearSPtrs
 	lda Unit,X 
@@ -2144,7 +2097,7 @@ L_BRS_1D04_1D41:
 	ldy #U_SHIP
 	jsr InitDXY
 	dex 
-	bpl L_BRS_1D04_1D41
+	bpl shrapsetup
 	lda #<imgShrapnel
 	sta SpriteV_l 
 	lda #>imgShrapnel
@@ -2157,7 +2110,7 @@ L_BRS_1D04_1D41:
 	sta _batch
 	ldx #$3C
 
-L_BRS_1D5B_1D72:
+shrapnel:
 
 	txa 
 	pha 
@@ -2167,24 +2120,24 @@ L_BRS_1D5B_1D72:
 	pla 
 	tax 
 	cpx #$12
-	bne L_BRS_1D71_1D6A
+	bne shrapnext
 	lda #(PALX_METAL|RED)
 	jsr SetPallette
 
-L_BRS_1D71_1D6A:
+shrapnext:
 
 	dex 
-	bne L_BRS_1D5B_1D72
+	bne shrapnel
 	ldx #ID_MAX
 
-L_BRS_1D76_1D83:
+unbackup:
 
 	lda Param,X 
 	sta Unit,X 
 	lda pDot_l,X 
 	sta Anim,X 
 	dex 
-	bpl L_BRS_1D76_1D83
+	bpl unbackup
 	pla 
 	sta _batch
 	ldx #$64
@@ -2197,20 +2150,20 @@ L_BRS_1D76_1D83:
 	cld 
 	lda _is_spawning
 	ora _enemyc
-	beq L_BRS_1DA4_1D9A
+	beq tonextlvl
 	lda _lives
-	bne L_BRS_1DA8_1D9E
+	bne continue
 	ldx _gameover_sp 
 	txs 
 	rts 
 
-L_BRS_1DA4_1D9A:
+tonextlvl:
 
 	ldx _nextlvl_sp
 	txs 
 	rts 
 
-L_BRS_1DA8_1D9E:
+continue:
 
 	jsr ContLevel
 	ldx #$32
@@ -2234,19 +2187,19 @@ Game:
 	jsr SpawnSquad
 	lda _level 
 	cmp #$06
-	bcc L_BRS_1DD9_1DD4
+	bcc spawned
 	jsr SpawnSquad
 
-L_BRS_1DD9_1DD4:
+spawned:
 
 	lda #FALSE
 	sta _is_spawning
 
-L_BRS_1DDD_1DE2:
+gameframe:
 
 	jsr Frame
 	lda _enemyc
-	bne L_BRS_1DDD_1DE2
+	bne gameframe
 	rts 
 
 SpawnSquad:
@@ -2255,26 +2208,24 @@ SpawnSquad:
 	sta _framec_l
 	sta _framec_h
 
-L_BRS_1DEB_1E00:
+squadloop:
 
 	jsr Frame
 	lda _enemyc
-	beq L_BRS_1E02_1DF0
+	beq newsquad
 	lda _humanc
-	beq L_BRS_1E02_1DF4
+	beq newsquad
 	inc _framec_l
-	bne L_BRS_1DFC_1DF8
+	bne squadnext
 	inc _framec_h
 
-L_BRS_1DFC_1DF8:
+squadnext:
 
 	lda _framec_h
 	cmp _squaddelay
-	bne L_BRS_1DEB_1E00
+	bne squadloop
 
-L_BRS_1E02_1DF0:
-L_BRS_1E02_1DF4:
-
+newsquad:
 	lda #LANDER
 	jsr MSpawn
 	rts 
@@ -2304,13 +2255,13 @@ WaitSpaceBar:
 	ldx #$01
 	jsr OSBYTE
 
-L_BRS_1E24_1E2E:
+spcloop:
 
 	lda #$7E		//Acknowledge ESCAPE Condition
 	jsr OSBYTE
 	jsr OSRDCH		//OSRDCH Read character (from keyboard) to A
 	cmp #$20		//is space pressed
-	bne L_BRS_1E24_1E2E
+	bne spcloop
 	rts 
 
 XYToVidP:
@@ -2318,9 +2269,9 @@ XYToVidP:
 	lda #NULL
 	sta _destptr_h 
 	cpx _min_xscr
-	bcc L_BRS_1E7D_1E37
+	bcc xytop_ret
 	cpx _max_xscr
-	bcs L_BRS_1E7D_1E3B
+	bcs xytop_ret
 	tya 
 	eor #%11111111
 	pha 
@@ -2354,11 +2305,11 @@ XYToVidP:
 	sta _destptr_l 
 	lda _temp 
 	adc _destptr_h 
-	bpl L_BRS_1E74_1E6F
+	bpl setrow
 	sec 
 	sbc #$50
 
-L_BRS_1E74_1E6F:
+setrow:
 
 	sta _destptr_h 
 	pla 
@@ -2366,18 +2317,17 @@ L_BRS_1E74_1E6F:
 	ora _destptr_l
 	sta _destptr_l 
 
-L_BRS_1E7D_1E37:
-L_BRS_1E7D_1E3B:
+xytop_ret:
 
 	rts 
 
 XORBlit:
 
 	lda _destptr_h 
-	bne L_BRS_1E83_1E80
+	bne xblt1
 	rts 
 
-L_BRS_1E83_1E80:
+xblt1:
 
 	lda #$00
 	sta _paintmask
@@ -2385,7 +2335,7 @@ L_BRS_1E83_1E80:
 	pha 
 	ldy #$00
 
-L_BRS_1E8C_1EF1:
+xorpinit:
 
 	lda _destptr_h 
 	pha 
@@ -2398,7 +2348,7 @@ L_BRS_1E8C_1EF1:
 	and #%11111000
 	sta _destptr_l 
 
-L_BRS_1E9E_1EC1:
+xorploop:
 
 	lda (_srcptr),Y 
 	php 
@@ -2409,31 +2359,31 @@ L_BRS_1E9E_1EC1:
 	sta (_destptr),Y 
 	iny 
 	plp 
-	beq L_BRS_1EB2_1EAC
+	beq xblt2
 	ora _paintmask
 	sta _paintmask
 
-L_BRS_1EB2_1EAC:
+xblt2:
 
 	cpy #$08
-	beq L_BRS_1EC9_1EB4
+	beq cellbelow
 
-L_BRS_1EB6_1EDD:
+xorpnext:
 
 	sty _dest_crow 
 	ldy _temp 
 	tya 
 	and _heightmask
-	beq L_BRS_1EDF_1EBD
+	beq cellright
 	dec _imglen 
-	bne L_BRS_1E9E_1EC1
+	bne xorploop
 	pla 
 	pla 
 	pla 
 	sta _imglen 
 	rts 
 
-L_BRS_1EC9_1EB4:
+cellbelow:
 
 	ldy #$00
 	clc 
@@ -2442,16 +2392,16 @@ L_BRS_1EC9_1EB4:
 	sta _destptr_l 
 	lda _destptr_h 
 	adc #$02
-	bpl L_BRS_1EDB_1ED6
+	bpl xblt3
 	sec 
 	sbc #$50
 
-L_BRS_1EDB_1ED6:
+xblt3:
 
 	sta _destptr_h 
-	bne L_BRS_1EB6_1EDD
+	bne xorpnext
 
-L_BRS_1EDF_1EBD:
+cellright:
 
 	clc 
 	pla 
@@ -2459,15 +2409,15 @@ L_BRS_1EDF_1EBD:
 	sta _destptr_l 
 	pla 
 	adc #$00
-	bpl L_BRS_1EED_1EE8
+	bpl xblt4
 	sec 
 	sbc #$50
 
-L_BRS_1EED_1EE8:
+xblt4:
 
 	sta _destptr_h 
 	dec _imglen 
-	bne L_BRS_1E8C_1EF1
+	bne xorpinit
 	pla 
 	sta _imglen 
 	rts 
@@ -2493,21 +2443,21 @@ NextFrame:
 
 	jsr ScreenStart
 	jsr WaitVSync
-	ldy #$14
-	ldx #$80
-	jsr StartTimer
+	ldy #$14		//HI
+	ldx #$80		//LO
+	jsr StartTimer	//$1480 or 5248 cycles
 	lda _bgpal
 	jsr SetPallette
 	lda _humanc
-	bne L_BRS_1F2F_1F26
+	bne palette2
 	lda _bgpal
 	ora #PAL_SURF
 	jsr SetPallette
 
-L_BRS_1F2F_1F26:
+palette2:
 
 	dec _flpalc
-	bne L_BRS_1F46_1F31
+	bne palette3
 	lda _flpalframes
 	sta _flpalc
 	inc _flashc
@@ -2518,16 +2468,16 @@ L_BRS_1F2F_1F26:
 	lda FlashPal,X 
 	jsr SetPallette
 
-L_BRS_1F46_1F31:
+palette3:
 
 	inc _rotpalc
 	lda _rotpalc
 	and #%00000011
-	bne L_BRS_1F70_1F4C
+	bne nxfrm_ret
 	ldx rotatec 
 	lda #PAL_ROT1
 
-L_BRS_1F53_1F6E:
+rotloop:
 
 	sta _temp 
 	stx rotatec 
@@ -2536,18 +2486,18 @@ L_BRS_1F53_1F6E:
 	jsr SetPallette
 	inx 
 	cpx #$03
-	bne L_BRS_1F67_1F63
+	bne palnext
 	ldx #$00
 
-L_BRS_1F67_1F63:
+palnext:
 
 	lda _temp 
 	clc 
 	adc #$10
 	cmp #$40
-	bne L_BRS_1F53_1F6E
+	bne rotloop
 
-L_BRS_1F70_1F4C:
+nxfrm_ret:
 
 	rts 
 
@@ -2558,13 +2508,13 @@ PSurfRight:
 	sty _xscrc
 	ldy _xwinedge,X 
 
-L_BRS_1F78_1F80:
+rsurfloop:
 
 	jsr XBltSurface
 	inc _xscrc
 	iny 
 	dec _dxwinc
-	bne L_BRS_1F78_1F80
+	bne rsurfloop
 	tya 
 	sta _xwinedge,X 
 	pla 
@@ -2577,13 +2527,13 @@ PSurfLeft:
 	sty _xscrc
 	ldy _xwinedge,X 
 
-L_BRS_1F8E_1F96:
+lsurfloop:
 
 	dec _xscrc
 	dey 
 	jsr XBltSurface
 	inc _dxwinc
-	bne L_BRS_1F8E_1F96
+	bne lsurfloop
 	tya 
 	sta _xwinedge,X 
 	pla 
@@ -2602,15 +2552,15 @@ XBltSurface:
 	tay 
 	lda SurfQuad,Y 
 
-L_BRS_1FAC_1FB1:
+unpakq:
 
 	dex 
-	bmi L_BRS_1FB3_1FAD
+	bmi gettile
 	lsr 
 	lsr 
-	bne L_BRS_1FAC_1FB1
+	bne unpakq
 
-L_BRS_1FB3_1FAD:
+gettile:
 
 	and #%00000011
 	asl 
@@ -2647,66 +2597,64 @@ L_BRS_1FB3_1FAD:
 ShipAll:
 
 	lda Anim + SHIP
-	beq L_BRS_1FF8_1FF3
+	beq nohyper
 	jmp ScrollScreen
 
-L_BRS_1FF8_1FF3:
+nohyper:
 
 	lda _dead
-	beq L_BRS_2016_1FFA
+	beq to_pausquit
 	lda _shippal
 	eor #$80
 	sta _shippal
-	bmi L_BRS_200B_2002
+	bmi flashframe
 	eor #%00000110
 	sta _shippal
 	jsr SetPallette
 
-L_BRS_200B_2002:
+flashframe:
 
 	lda #$00
 	sta dX_l + SHIP
 	sta dX_h 
 	jmp UpdateShip
 
-L_BRS_2016_1FFA:
+to_pausquit:
 
 	jsr KeyFire
 	ldx #KEY_A
 	jsr ScanInkey
-	beq L_BRS_202D_201E
+	beq key_down
 	clc 
 	lda Y_h + SHIP 
 	adc #$02
 	cmp #$C3
-	bcs L_BRS_202D_2028
+	bcs key_down
 	sta Y_h + SHIP 
 
-L_BRS_202D_201E:
-L_BRS_202D_2028:
+key_down:
 
 	ldx #KEY_Z
 	jsr ScanInkey
-	beq L_BRS_2041_2032
+	beq keys_nav
 	sec 
 	lda Y_h + SHIP 
 	sbc #$02
 	cmp #$09
-	bcc L_BRS_2041_203C
+	bcc keys_nav
 	sta Y_h + SHIP 
 
-L_BRS_2041_2032:
-L_BRS_2041_203C:
+keys_nav:
 
 	ldx #KEY_SPACE
 	jsr ScanInkey
-	beq L_BRS_204A_2046
+	beq space0
 	eor _inkey_space
 
-L_BRS_204A_2046:
+space0:
 
 	stx _inkey_space
-	beq L_BRS_2077_204C
+	beq key_thrust
 	lda pSprite_l 
 	sta _destptr_l 
 	lda pSprite_h 
@@ -2726,11 +2674,11 @@ L_BRS_204A_2046:
 	sbc _ddx_h
 	sta _ddx_h
 
-L_BRS_2077_204C:
+key_thrust:
 
 	ldx #KEY_SHIFT
 	jsr ScanInkey
-	beq L_BRS_208F_207C
+	beq shipdrag
 	clc 
 	lda dX_l + SHIP
 	adc _ddx_l
@@ -2739,13 +2687,13 @@ L_BRS_2077_204C:
 	adc _ddx_h
 	sta dX_h 
 
-L_BRS_208F_207C:
+shipdrag:
 
 	lda dX_h 
 	ora dX_l + SHIP
-	beq L_BRS_20EB_2095
+	beq dragdone
 	lda dX_h 
-	bpl L_BRS_20C2_209A
+	bpl rdrag
 	clc 
 	lda dX_l + SHIP
 	adc #$03
@@ -2753,17 +2701,17 @@ L_BRS_208F_207C:
 	lda dX_h 
 	adc #$00
 	sta dX_h 
-	bcs L_BRS_20E3_20AD
+	bcs stopship
 	lda dX_h 
 	cmp #$FF
-	bpl L_BRS_20EB_20B4
+	bpl dragdone
 	lda #$FF
 	sta dX_h 
 	lda #$00
 	sta dX_l + SHIP
-	beq L_BRS_20EB_20C0
+	beq dragdone
 
-L_BRS_20C2_209A:
+rdrag:
 
 	sec 
 	lda dX_l + SHIP
@@ -2772,50 +2720,42 @@ L_BRS_20C2_209A:
 	lda dX_h 
 	sbc #$00
 	sta dX_h 
-	bcc L_BRS_20E3_20D3
+	bcc stopship
 	lda dX_h 
 	cmp #$01
-	bmi L_BRS_20EB_20DA
+	bmi dragdone
 	lda #$00
 	sta dX_l + SHIP
-	beq L_BRS_20EB_20E1
+	beq dragdone
 
-L_BRS_20E3_20AD:
-L_BRS_20E3_20D3:
-
+stopship:
 	lda #$00
 	sta dX_l + SHIP
 	sta dX_h 
 
-L_BRS_20EB_2095:
-L_BRS_20EB_20B4:
-L_BRS_20EB_20C0:
-L_BRS_20EB_20DA:
-L_BRS_20EB_20E1:
+dragdone:
 
 	ldx #$00
 	jsr GetXScreen
 	tax 
 	ldy #$0F
 	lda _ddx_h
-	bpl L_BRS_20F9_20F5
+	bpl xscrnew
 	ldy #$3B
 
-L_BRS_20F9_20F5:
+xscrnew:
 
 	sty _temp 
 	lda #$00
 	ldy #$00
 	cpx _temp 
-	beq L_BRS_210B_2101
+	beq dxrel
 	lda #$80
-	bcs L_BRS_210B_2105
+	bcs dxrel
 	lda #$80
 	ldy #$FF
 
-L_BRS_210B_2101:
-L_BRS_210B_2105:
-
+dxrel:
 	clc 
 	adc dX_l + SHIP
 	sta _dxrel_l
@@ -2842,7 +2782,7 @@ UpdateShip:
 Hitchhiker:
 
 	lda _hikerc
-	beq L_BRS_215D_2134
+	beq hherase
 	lda #MAN
 	sta Unit + HITCH 
 	lda X_l + SHIP
@@ -2860,7 +2800,7 @@ Hitchhiker:
 	jsr NextVidP
 	jmp MMUpdate
 
-L_BRS_215D_2134:
+hherase:
 
 	ldx #HITCH
 	jmp EraseUnit
@@ -2877,34 +2817,31 @@ MoveUnit:
 	lda dY_h,X 
 	adc Y_h,X 
 	cmp #$C3
-	bcc L_BRS_2182_217A
+	bcc ybottom
 	cpy #(U_SHIP&KUGEL)
-	beq L_BRS_21D1_217E
+	beq offscreen
 	lda #$09
 
-L_BRS_2182_217A:
+ybottom:
 
 	cmp #$09
-	bcs L_BRS_219A_2184
+	bcs ymove
 	cpy #(U_SHIP&KUGEL)
-	bne L_BRS_2190_2188
+	bne yminunit
 	cmp #$04
-	bcs L_BRS_219A_218C
-	bcc L_BRS_21D1_218E
+	bcs ymove
+	bcc offscreen
 
-L_BRS_2190_2188:
+yminunit:
 
 	cpy #MAN
 	php 
 	lda #$C2
 	plp 
-	bne L_BRS_219A_2196
+	bne ymove
 	lda #$09
 
-L_BRS_219A_2184:
-L_BRS_219A_218C:
-L_BRS_219A_2196:
-
+ymove:
 	sta Y_h,X 
 
 MoveXUnit:
@@ -2928,7 +2865,7 @@ NextVidP:
 	pla 
 	tax 
 
-L_BRS_21BE_21D5:
+setnextp:
 
 	lda _destptr_l 
 	sta pNext_l,X 
@@ -2939,12 +2876,10 @@ L_BRS_21BE_21D5:
 	sta Unit,X 
 	rts 
 
-L_BRS_21D1_217E:
-L_BRS_21D1_218E:
-
+offscreen:
 	lda #NULL
 	sta _destptr_h 
-	beq L_BRS_21BE_21D5
+	beq setnextp
 
 GetXScreen:
 
@@ -2959,11 +2894,11 @@ GetXScreen:
 	rol 
 	sta _temp 
 	eor _offset_h 
-	bmi L_BRS_21F2_21ED
+	bmi isoffscreen
 	lda _temp 
 	rts 
 
-L_BRS_21F2_21ED:
+isoffscreen:
 
 	lda #$80
 	rts 
@@ -2972,27 +2907,26 @@ RepaintAll:
 
 	ldx #SHIP
 
-L_BRS_21F7_224B:
+rpaloop:
 
 	txa
 	pha 
 	lda Unit,X 
-	bmi L_BRS_2246_21FC
+	bmi rpanext
 	ora #$80
 	sta Unit,X 
 	lda Anim,X 
-	bne L_BRS_2246_2206
+	bne rpanext
 	lda pSprite_l,X 
 	cmp pNext_l,X 
-	bne L_BRS_221C_220E
+	bne rpaerase
 	lda pSprite_h,X 
 	cmp pNext_h,X 
-	bne L_BRS_221C_2216
+	bne rpaerase
 	cpx #SHIP
-	bne L_BRS_2246_221A
+	bne rpanext
 
-L_BRS_221C_220E:
-L_BRS_221C_2216:
+rpaerase:
 
 	lda pSprite_l,X 
 	sta _destptr_l 
@@ -3014,15 +2948,13 @@ L_BRS_221C_2216:
 	pha 
 	jsr XORBlit
 
-L_BRS_2246_21FC:
-L_BRS_2246_2206:
-L_BRS_2246_221A:
+rpanext:
 
 	pla 
 	tax 
 	inx 
 	cpx #ID_ALT3 + 1
-	bne L_BRS_21F7_224B
+	bne rpaloop
 	rts 
 
 XBLTSprite:
@@ -3037,11 +2969,11 @@ XBLTSprite:
 	sta _srcptr_h 
 	jsr XORBlit
 	cpx #U_SHIP
-	bne L_BRS_226D_2267
+	bne xbspr_ret
 	lda _paintmask
 	sta _collision
 
-L_BRS_226D_2267:
+xbspr_ret:
 
 	rts 
 
@@ -3060,8 +2992,8 @@ ScrollSurface:
 	lda _oldorgp_h 
 	sta _originp_h
 	lda _dxwin
-	beq L_BRS_22C8_2286
-	bpl L_BRS_22A9_2288
+	beq ssurfstill
+	bpl ssurfright
 	ldx #RIGHT
 	ldy #$50
 	jsr PSurfLeft
@@ -3079,7 +3011,7 @@ ScrollSurface:
 	jsr PSurfLeft
 	jmp SSurfRTS
 
-L_BRS_22A9_2288:
+ssurfright:
 
 	ldx #LEFT
 	ldy #$00
@@ -3098,7 +3030,7 @@ L_BRS_22A9_2288:
 	jsr PSurfRight
 	jmp SSurfRTS
 
-L_BRS_22C8_2286:
+ssurfstill:
 
 	pla 
 	sta _originp_h
@@ -3127,10 +3059,10 @@ ScrollScreen:
 	asl 
 	asl 
 	ldy #$00
-	bcc L_BRS_22EC_22E8
+	bcc !+
 	ldy #$FF
 
-L_BRS_22EC_22E8:
+!:
 
 	sta _scrolloff_l
 	clc 
@@ -3139,17 +3071,17 @@ L_BRS_22EC_22E8:
 	tya 
 	sta _scrolloff_h 
 	adc _originp_h
-	bpl L_BRS_22FD_22F8
+	bpl !+
 	sec 
 	sbc #$50
 
-L_BRS_22FD_22F8:
+!:
 
 	cmp #$30
-	bcs L_BRS_2303_22FF
+	bcs !+
 	adc #$50
 
-L_BRS_2303_22FF:
+!:
 
 	sta _originp_h
 	pla 
@@ -3160,22 +3092,22 @@ Collision:
 
 	lda _collision
 	and #%11000000
-	beq L_BRS_2315_230F
+	beq nocollide
 	lda _dead
-	beq L_BRS_2316_2313
+	beq cllshipx
 
-L_BRS_2315_230F:
+nocollide:
 
 	rts 
 
-L_BRS_2316_2313:
+cllshipx:
 
 	ldx #SHIP
 	jsr GetXScreen
 	sta _ship_xscr
 	ldx #ID_ALT3
 
-L_BRS_231F_2389:
+cllloop:
 
 	lda Unit,X 
 	asl 
@@ -3203,7 +3135,7 @@ L_BRS_231F_2389:
 	lda Unit,X 
 	and #%01111111
 	cmp #MAN
-	beq L_BRS_2366_2356
+	beq cllman
 	jsr ScoreUnit
 	jsr KillUnit
 	lda #TRUE
@@ -3211,7 +3143,7 @@ L_BRS_231F_2389:
 	lda #(PAL_SHIP|WHITE)
 	sta _shippal
 
-L_BRS_2366_2356:
+cllman:
 
 	lda Param,X 
 	bpl CollideNext
@@ -3231,7 +3163,7 @@ CollideNext:
 
 	dex 
 	cpx #ID_MIN
-	bcs L_BRS_231F_2389
+	bcs cllloop
 	rts 
 
 Random:
@@ -3240,7 +3172,7 @@ Random:
 	pha 
 	ldx #$08
 
-L_BRS_2390_239F:
+randgen:
 
 	lda _rand_h
 	and #%01001000
@@ -3251,7 +3183,7 @@ L_BRS_2390_239F:
 	rol _rand_m
 	rol _rand_h
 	dex 
-	bne L_BRS_2390_239F
+	bne randgen
 	pla 
 	tax 
 	lda _rand_h
@@ -3265,22 +3197,22 @@ NextLevel:
 	adc #$01
 	sta _level 
 	cmp #$05
-	bcc L_BRS_23B4_23B0
+	bcc manbonus
 	lda #$05
 
-L_BRS_23B4_23B0:
+manbonus:
 
 	sta _humanbonus
 	lda _level 
 	sec 
 	ldx #(PAL_SURF|RED)		//pallete colour(terrain)
 
-L_BRS_23BB_23BD:
+modulo5:
 
 	sbc #$05
-	bcs L_BRS_23BB_23BD
+	bcs modulo5
 	cmp #$95
-	bne L_BRS_23CF_23C1
+	bne notbonus
 	lda #$A		//#of humanoids
 	sta _humanc
 	lda #FALSE
@@ -3288,14 +3220,14 @@ L_BRS_23BB_23BD:
 	ldx #(PAL_SURF|GREEN)
 	inc _batch
 
-L_BRS_23CF_23C1:
+notbonus:
 
 	cld 
 	lda _humanc
-	bne L_BRS_23D6_23D2
+	bne setsurface
 	ldx #(PAL_SURF|BLACK)
 
-L_BRS_23D6_23D2:
+setsurface:
 
 	stx _surfpal
 	clc 
@@ -3311,11 +3243,11 @@ L_BRS_23D6_23D2:
 	ldx #ID_MAX
 	lda #EMPTY
 
-L_BRS_23F1_23F5:
+nlclrslots:
 
 	sta Unit,X 
 	dex 
-	bpl L_BRS_23F1_23F5
+	bpl nlclrslots
 	lda #$00
 	sta _hikerc
 	lda #ID_ALT1
@@ -3335,41 +3267,37 @@ L_BRS_23F1_23F5:
 	ldx #$00
 	lda _level 
 	cmp #$01
-	beq L_BRS_2429_241F
+	beq bomberc
 	ldx #$04
 	cmp #$04
-	bcc L_BRS_2429_2425
+	bcc bomberc
 	ldx #$07
 
-L_BRS_2429_241F:
-L_BRS_2429_2425:
+bomberc:
 
 	stx Spawnc +  BOMBER
 	ldx #$04
 	cmp #$04
-	bcs L_BRS_243E_2430
+	bcs podc
 	dex 
 	cmp #$03
-	beq L_BRS_243E_2435
+	beq podc
 	dex 
 	dex 
 	cmp #$02
-	beq L_BRS_243E_243B
+	beq podc
 	dex 
 
-L_BRS_243E_2430:
-L_BRS_243E_2435:
-L_BRS_243E_243B:
-
+podc:
 	stx Spawnc + POD
 	lda dXMinInit + LANDER
 	clc 
 	adc #$02
 	cmp #$18
-	bcs L_BRS_244E_2449
+	bcs nxlev8
 	sta dXMinInit + LANDER
 
-L_BRS_244E_2449:
+nxlev8:
 
 	lda #(PAL_BG|BLACK)
 	sta _bgpal
@@ -3380,21 +3308,21 @@ ContLevel:
 	sta XMinInit + SWARMER
 	ldx #ID_MAX + 1
 
-L_BRS_2459_246E:
+contloop:
 
 	lda Unit,X 
 	and #%01111111
 	cmp #BAITER
-	bne L_BRS_2467_2460
+	bne notbaiter
 	lda #EMPTY
 	sta Unit,X 
 
-L_BRS_2467_2460:
+notbaiter:
 
 	jsr resetUnit
 	jsr InitUnit
 	dex 
-	bpl L_BRS_2459_246E
+	bpl contloop
 	lda #ID_MIN
 	sta _id
 	lda #$00
@@ -3428,29 +3356,29 @@ NewScreen:
 	lda #$00
 	ldx #$03
 
-L_BRS_24AC_24AF:
+clrbeams:
 
 	sta _Laser,X 
 	dex 
-	bpl L_BRS_24AC_24AF
+	bpl clrbeams
 	lda #EMPTY
 	sta Unit + HITCH 
 	ldx #ID_ALT3
 
-L_BRS_24B8_24C3:
+freeobjs:
 
 	lda #EMPTY
 	sta Unit,X 
 	jsr ClearData
 	dex 
 	cpx #ID_BULLET1
-	bpl L_BRS_24B8_24C3
+	bpl freeobjs
 
-L_BRS_24C5_24C9:
+resetus:
 
 	jsr resetUnit
 	dex 
-	bpl L_BRS_24C5_24C9
+	bpl resetus
 	lda #$80
 	sta Param + HITCH
 	lda #$00
@@ -3482,22 +3410,22 @@ L_BRS_24C5_24C9:
 	jsr WaitVSync
 	lda #(PAL_BG|BLACK)
 
-L_BRS_2510_2516:
+blackpal:
 
 	jsr SetPallette
 	clc 
 	adc #$10
-	bne L_BRS_2510_2516
+	bne blackpal
 	lda #$00
 	jsr PrintN
 	lda #(PALX_ENEMYB|BLACK)
 
-L_BRS_251F_2525:
+setpalx:
 
 	jsr SetPallette
 	clc 
 	adc #$11
-	bcc L_BRS_251F_2525
+	bcc setpalx
 	lda #(PAL_FLASH|WHITE)
 	jsr SetPallette
 	lda _surfpal
@@ -3520,20 +3448,18 @@ L_BRS_251F_2525:
 resetUnit:
 
 	lda Anim,X 
-	beq L_BRS_2562_2552
-	bpl L_BRS_255D_2554
+	beq !++
+	bpl !+
 	lda #EMPTY
 	sta Unit,X 
-	bne L_BRS_2562_255B
+	bne !++
 
-L_BRS_255D_2554:
+!:
 
 	lda #$08
 	sta Param,X 
 
-L_BRS_2562_2552:
-L_BRS_2562_255B:
-
+!:
 	jsr ClearSPtrs
 	sta pDot_h,X 
 	rts 
@@ -3564,13 +3490,13 @@ PrintN:
 	lda (_destptr),Y 
 	sta _strlen
 
-L_BRS_258F_2597:
+coutlp:
 
 	iny 
 	lda (_destptr),Y 
 	jsr OSWRCH	//print character
 	cpy _strlen	//} while
-	bne L_BRS_258F_2597
+	bne coutlp
 	ldx _savedx
 	ldy _savedy
 	rts 
@@ -3583,7 +3509,7 @@ ScoreUnit:
 	pha 
 	lda Unit,X 
 	cmp #EMPTY
-	beq L_BRS_25B7_25A7
+	beq !+
 	and #%01111111
 	tax 
 	lda Points_h,X 
@@ -3592,7 +3518,7 @@ ScoreUnit:
 	tax 
 	jsr AddScore
 
-L_BRS_25B7_25A7:
+!:
 
 	pla 
 	tay 
@@ -3612,11 +3538,11 @@ Score500:
 	pla 
 	tax 
 	jsr SpawnMisc
-	bcs L_BRS_25FF_25CC
+	bcs sc500_ret
 	lda #(UPDATE|S500)
 	sta Unit,Y 
 
-L_BRS_25D3_2619:
+spawn_score:
 
 	clc 
 	lda Y_h,Y 
@@ -3638,8 +3564,7 @@ L_BRS_25D3_2619:
 	sbc #$01
 	sta X_h,Y 
 
-L_BRS_25FF_25CC:
-L_BRS_25FF_2612:
+sc500_ret:
 
 	pla 
 	tay 
@@ -3657,10 +3582,10 @@ Score250:
 	pla 
 	tax 
 	jsr SpawnMisc
-	bcs L_BRS_25FF_2612
+	bcs sc500_ret
 	lda #(UPDATE|S250)
 	sta Unit,Y 
-	bne L_BRS_25D3_2619
+	bne spawn_score
 
 AddScore:
 
@@ -3678,10 +3603,10 @@ AddScore:
 	sta _score_msb
 	plp 
 	cld 
-	bcc L_BRS_2635_2630
+	bcc !+
 	jsr Reward
 
-L_BRS_2635_2630:
+!:
 
 	lda _digitp_l
 	sta _destptr_l 
@@ -3691,12 +3616,12 @@ L_BRS_2635_2630:
 	sta _leading0
 	ldx #$02
 
-L_BRS_2643_2649:
+!:
 
 	lda _score_lsb,X 
 	jsr PaintBCD
 	dex 
-	bpl L_BRS_2643_2649
+	bpl !-
 	lda #FALSE
 	sta _leading0
 	jsr PaintDigit
@@ -3715,11 +3640,11 @@ PaintBCD:
 	and #%11110000
 	jsr PaintDigit
 	cpx #$00
-	bne L_BRS_2672_266C
+	bne !+
 	lda #TRUE
 	sta _leading0
 
-L_BRS_2672_266C:
+!:
 
 	pla 
 	asl 
@@ -3735,40 +3660,38 @@ PaintDigit:
 	sta _leading0
 	ldy #$00
 
-L_BRS_2680_26A8:
+pdigloop:
 
 	lda _leading0
-	beq L_BRS_2689_2682
+	beq !+
 	lda imgDigit,X 		//HUD numbers
 	sta (_destptr),Y 
 
-L_BRS_2689_2682:
+!:
 
 	iny 
 	inx 
 	tya 
 	and #%00000111
 	tay 
-	bne L_BRS_26A5_268F
+	bne plnext
 	clc 
 	lda _destptr_l 
 	adc #$08
 	sta _destptr_l 
-	bcc L_BRS_26A5_2698
+	bcc plnext
 	inc _destptr_h 
-	bpl L_BRS_26A5_269C
+	bpl plnext
 	lda _destptr_h 
 	sec 
 	sbc #$50
 	sta _destptr_h 
 
-L_BRS_26A5_268F:
-L_BRS_26A5_2698:
-L_BRS_26A5_269C:
+plnext:
 
 	txa 
 	and #%00001111
-	bne L_BRS_2680_26A8
+	bne pdigloop
 	ldx _temp 
 	rts 
 
@@ -3776,10 +3699,10 @@ RepaintDigit:
 
 	ldy #$00
 	lda _scrolloff_l
-	bpl L_BRS_26B5_26B1
+	bpl !+
 	ldy #$FF
 
-L_BRS_26B5_26B1:
+!:
 
 	sty _temp 
 	clc 
@@ -3791,17 +3714,17 @@ L_BRS_26B5_26B1:
 	lda _digitp_h
 	sta _srcptr_h 
 	adc _temp 
-	bpl L_BRS_26CD_26C8
+	bpl !+
 	sec 
 	sbc #$50
 
-L_BRS_26CD_26C8:
+!:
 
 	cmp #$30
-	bcs L_BRS_26D3_26CF
+	bcs !+
 	adc #$50
 
-L_BRS_26D3_26CF:
+!:
 
 	sta _destptr_h 
 	sta _digitp_h
@@ -3814,74 +3737,70 @@ L_BRS_26D3_26CF:
 	lda #$18
 	sbc _dxwin
 	bit _dxwin
-	bmi L_BRS_271B_26E8
+	bmi rpdig0
 	clc 
 	lda _destptr_l 
 	adc #$B8
 	sta _destptr_l 
-	bcc L_BRS_26FE_26F1
+	bcc !+
 	inc _destptr_h 
-	bpl L_BRS_26FE_26F5
+	bpl !+
 	sec 
 	lda _destptr_h 
 	sbc #$50
 	sta _destptr_h 
 
-L_BRS_26FE_26F1:
-L_BRS_26FE_26F5:
-
+!:
 	clc 
 	lda _srcptr_l 
 	adc #$B8
 	sta _srcptr_l 
-	bcc L_BRS_2712_2705
+	bcc !+
 	inc _srcptr_h 
-	bpl L_BRS_2712_2709
+	bpl !+
 	sec 
 	lda _srcptr_h 
 	sbc #$50
 	sta _srcptr_h 
 
-L_BRS_2712_2705:
-L_BRS_2712_2709:
-
+!:
 	lda #$F8
 	sta _temp_l 
 	clc 
 	lda #$18
 	adc _dxwin
 
-L_BRS_271B_26E8:
+rpdig0:
 
 	tax 
 
-L_BRS_271C_2756:
+rpdigloop:
 
 	ldy #$07
 
-L_BRS_271E_2723:
+!:
 
 	lda (_srcptr),Y 
 	sta (_destptr),Y 
 	dey 
-	bpl L_BRS_271E_2723
+	bpl !-
 	clc 
 	lda _srcptr_l 
 	adc _temp_l 
 	sta _srcptr_l 
 	lda _temp_h 
 	adc _srcptr_h 
-	bpl L_BRS_2735_2730
+	bpl !+
 	sec 
 	sbc #$50
 
-L_BRS_2735_2730:
+!:
 
 	cmp #$30
-	bcs L_BRS_273B_2737
+	bcs !+
 	adc #$50
 
-L_BRS_273B_2737:
+!:
 
 	sta _srcptr_h 
 	clc 
@@ -3890,21 +3809,21 @@ L_BRS_273B_2737:
 	sta _destptr_l 
 	lda _temp_h 
 	adc _destptr_h 
-	bpl L_BRS_274D_2748
+	bpl !+
 	sec 
 	sbc #$50
 
-L_BRS_274D_2748:
+!:
 
 	cmp #$30
-	bcs L_BRS_2753_274F
+	bcs !+
 	adc #$50
 
-L_BRS_2753_274F:
+!:
 
 	sta _destptr_h 
 	dex 
-	bne L_BRS_271C_2756
+	bne rpdigloop
 	rts 
 
 InitZP:
@@ -4001,12 +3920,12 @@ CursorOff:
 	jsr CursorXY
 	ldx #$02
 
-L_BRS_27FF_2805:
+!:
 
 	lda _score_lsb,X 
 	jsr PrintBCD
 	dex 
-	bpl L_BRS_27FF_2805
+	bpl !-
 	rts 
 
 PrintBCD:
@@ -4026,10 +3945,10 @@ PrintDigit:
 	tax 
 	ora _leading0
 	sta _leading0
-	bne L_BRS_281E_281A
+	bne !+
 	ldx #(' '-'0')	//$f0
 
-L_BRS_281E_281A:
+!:
 
 	txa 
 	clc 
@@ -4060,7 +3979,7 @@ Hiscore:
 	jsr OSBYTE
 	ldx #$00
 
-L_BRS_2844_285C:
+highloop:
 
 	lda HiScore,X 
 	cmp _score_lsb
@@ -4068,31 +3987,31 @@ L_BRS_2844_285C:
 	sbc _score_100
 	lda HiScore + 2,X 
 	sbc _score_msb
-	bcc L_BRS_2860_2853
+	bcc newhigh3
 	txa 
 	clc 
 	adc #$18
 	tax 
 	cpx #$A9		//#(24*7 + 1)
-	bcc L_BRS_2844_285C
+	bcc highloop
 	bcs PrintHighs
 
-L_BRS_2860_2853:
+newhigh3:
 
 	stx _temp 
 	cpx #$A8		//#(24*7)
-	beq L_BRS_2873_2864
+	beq !++
 	ldx #$A8
 
-L_BRS_2868_2871:
+!:
 
 	dex 
 	lda HiScore,X 
 	sta $0718,X 
 	cpx _temp 
-	bne L_BRS_2868_2871
+	bne !-
 
-L_BRS_2873_2864:
+!:
 
 	lda #$0D
 	sta HiScore + 3,X 
@@ -4114,7 +4033,7 @@ PrintHighs:
 	stx _high_rank
 	ldy #$06
 
-L_BRS_289B_28F1:
+prhiloop:
 
 	txa 
 	pha 
@@ -4142,10 +4061,10 @@ L_BRS_289B_28F1:
 	lda HiScore,X 
 	jsr PrintBCD
 	cpx _temp 
-	bne L_BRS_28D5_28D1
+	bne !+
 	sty _temp2 
 
-L_BRS_28D5_28D1:
+!:
 
 	lda #$05
 	jsr PrintN
@@ -4153,13 +4072,13 @@ L_BRS_28D5_28D1:
 	inx 
 	inx 
 
-L_BRS_28DD_28E6:
+!:
 
 	lda HiScore,X 
 	jsr OSWRCH
 	inx 
 	cmp #$0D
-	bne L_BRS_28DD_28E6
+	bne !-
 	iny 
 	iny 
 	pla 
@@ -4167,7 +4086,7 @@ L_BRS_28DD_28E6:
 	adc #$18
 	tax 
 	cpx #$C0
-	bne L_BRS_289B_28F1
+	bne prhiloop
 	rts 
 
 InputName:
@@ -4198,12 +4117,12 @@ InputName:
 	ldy #>ParamBlk
 	lda #$00
 	jsr OSWORD		//input line
-	bcc L_BRS_293A_2931
+	bcc !+
 	ldx _temp 
 	lda #$0D
 	sta HiScore + 3,X 
 
-L_BRS_293A_2931:
+!:
 
 	jmp CursorOff
 
@@ -4241,7 +4160,7 @@ DoneLevel:
 	lda #$00
 	jsr PaintBCD
 	lda _humanc
-	beq L_BRS_29A9_2982
+	beq lvldone
 	sta _count
 	ldx #$19
 
@@ -4265,7 +4184,7 @@ BonusLoop:
 	dec _count
 	bne BonusLoop
 
-L_BRS_29A9_2982:
+lvldone:
 
 	ldx #$46
 	jsr Delay
@@ -4306,20 +4225,20 @@ Planetoid:
 	jsr PlaySound
 	jsr InitZP
 
-L_BRS_29E8_29F3:
+planetloop:
 
 	jsr NextLevel
 	jsr Game
 	jsr DoneLevel
 	lda _lives
-	bne L_BRS_29E8_29F3
+	bne planetloop
 	rts 
 
 AnimFrame:
 
 	lda Param,X 
 	cmp #$08
-	beq L_BRS_2A2C_29FB
+	beq !+
 	lda _originp_l
 	pha 
 	lda _originp_h
@@ -4346,13 +4265,13 @@ AnimFrame:
 	pla 
 	sta _originp_l
 
-L_BRS_2A2C_29FB:
+!:
 
 	ldy Param,X 
 	dey 
 	tya 
 	sta Param,X 
-	beq L_BRS_2A4D_2A34
+	beq !+
 	lda _originp_l
 	sta pNext_l,X 
 	lda _originp_h
@@ -4363,27 +4282,25 @@ L_BRS_2A2C_29FB:
 	sta pSprite_h,X 
 	jmp XORAnimate
 
-L_BRS_2A4D_2A34:
+!:
 
 	lda Anim,X 
-	bmi L_BRS_2A69_2A50
+	bmi !++
 	cpx #SHIP
-	bne L_BRS_2A5D_2A54
+	bne !+
 	asl 
-	bpl L_BRS_2A5D_2A57
+	bpl !+
 	lda #TRUE
 	sta _dead
 
-L_BRS_2A5D_2A54:
-L_BRS_2A5D_2A57:
-
+!:
 	lda #$00
 	sta Anim,X 
 	sta pSprite_h,X 
 	sta pNext_h,X 
 	rts 
 
-L_BRS_2A69_2A50:
+!:
 
 	lda #EMPTY
 	sta Unit,X 
@@ -4406,18 +4323,18 @@ XORAnimate:
 	bmi XAnimRet
 	sta _anim_xscr 
 	lda Anim,X 
-	bmi L_BRS_2ADE_2A8F
+	bmi anim_blast
 	lda Param,X 
 	cmp #$07
-	bne L_BRS_2A9D_2A96
+	bne !+
 	lda #$06
 	jsr PlaySound
 
-L_BRS_2A9D_2A96:
+!:
 
 	ldy #$07
 
-L_BRS_2A9F_2AD3:
+warploop:
 
 	sty _yreg
 	ldx _anim_xscr 
@@ -4434,7 +4351,7 @@ L_BRS_2A9F_2AD3:
 	tax 
 	jsr XYToVidP
 	lda _destptr_h 
-	beq L_BRS_2AD0_2ABE
+	beq warpnext
 	ldy #$00
 	ldx _id
 	lda Unit,X 
@@ -4444,11 +4361,11 @@ L_BRS_2A9F_2AD3:
 	eor (_destptr),Y 
 	sta (_destptr),Y 
 
-L_BRS_2AD0_2ABE:
+warpnext:
 
 	ldy _yreg
 	dey 
-	bpl L_BRS_2A9F_2AD3
+	bpl warploop
 	ldx _id
 
 XAnimRet:
@@ -4459,11 +4376,11 @@ XAnimRet:
 	sta _min_xscr
 	rts 
 
-L_BRS_2ADE_2A8F:
+anim_blast:
 
 	ldy #$07
 
-L_BRS_2AE0_2B19:
+blastloop:
 
 	lda _anim_xscr 
 	ldx BlastX,Y 
@@ -4496,7 +4413,7 @@ BlastNext:
 	ldx _id
 	ldy _yreg
 	dey 
-	bpl L_BRS_2AE0_2B19
+	bpl blastloop
 	jmp XAnimRet
 
 BlastCoord:
@@ -4511,12 +4428,12 @@ BlastCoord:
 	tay 
 	pla 
 
-L_BRS_2B2D_2B31:
+!:
 
 	clc 
 	adc _temp 
 	dey 
-	bne L_BRS_2B2D_2B31
+	bne !-
 	php 
 	ldy _yreg
 	ldx _id
@@ -4539,7 +4456,7 @@ WarpCoord:
 	lda Param,X 
 	tax 
 
-L_BRS_2B53_2B61:
+!:
 
 	clc 
 	lda _srcptr_l 
@@ -4549,7 +4466,7 @@ L_BRS_2B53_2B61:
 	adc _offset_h 
 	sta _srcptr_h 
 	dex 
-	bne L_BRS_2B53_2B61
+	bne !-
 	lda _srcptr_l 
 	lsr _srcptr_h 
 	ror 
@@ -4586,16 +4503,14 @@ IsLinked:
 
 	eor Unit,Y 
 	and #%01111111
-	bne L_BRS_2B9F_2B91
+	bne linkerr
 	stx _temp_l
 	lda Param,Y 
 	cmp _temp_l
-	bne L_BRS_2B9F_2B9A
+	bne linkerr
 	lda Anim,Y 
 
-L_BRS_2B9F_2B91:
-L_BRS_2B9F_2B9A:
-
+linkerr:
 	rts
 
 #import "Sound.asm"
