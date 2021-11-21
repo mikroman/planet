@@ -360,6 +360,7 @@ j1v_e:		jsr		random		//12d2
 
 j1v_f:		lda		dX_l,x		//1306
 			sta		_temp_l
+			lda 	dX_h,X
 			asl		_temp_l
 			rol		
 			asl		_temp_l

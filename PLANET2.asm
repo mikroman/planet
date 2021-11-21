@@ -438,11 +438,11 @@ J1385:
 
 	ldy #$06
 	lda #$00
-	bcs Above
+	bcs !+
 	ldy #$FA
 	lda #$00
 
-Above:
+!:
 
 	sta dY_l,X 
 	tya 
