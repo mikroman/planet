@@ -1,4 +1,4 @@
-* = $3100 "0E00"
+* = $3100 "Relocated"
 
 .pseudopc $0E00 {
 
