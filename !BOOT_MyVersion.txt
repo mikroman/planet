@@ -1,0 +1,1 @@
+MODE7:PAGE=&3C00:CHAIN"Planet1"

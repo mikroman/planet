@@ -1,5 +1,6 @@
 #import "constants.asm"
 #import "labelsII.asm"
+.encoding "ascii"
 
 *=$1100 "Game"
 
@@ -4522,8 +4523,13 @@ linkerr:
 * = $3000 "BOOT"
 
 Boot:
+	// lda #$8C		//perfom *TAPE
+	// jsr OSWRCH
+	lda #$0F
+	jsr OSBYTE
 	jsr Relocate	//LINE 120 REM:FOR I% = 0 TO &2FC STEP4 :I%!&E00 = I%!&3100:NEXT
 	jsr SetUpEnvelopes
+	jsr RedefinedCharacters
 	lda #$ce
 	sta _rand_h
 	lda #$ad
@@ -4531,6 +4537,7 @@ Boot:
 	lda #$02
 	sta _rand_l
 	lda #$00
+	sta USR6522+2
 	ldx #$01
 	jsr OSBYTE
 	ldx #$FF
@@ -4566,7 +4573,15 @@ mkScLoop:
 	bcc mkScLoop
 	cpx #$A9
 	bcc YReset
+	lda #$07
+	jsr PrintN
+	lda #$08
+	jsr PrintN
+	lda #$09
+	jsr PrintN
+	jsr WaitSpaceBar
 	jmp Main
+
 	 
 SetUpEnvelopes:
 
@@ -4587,7 +4602,7 @@ SetUpEnvelopes:
     lda #$08
     jsr OSWORD
     rts
-	
+		
 ENVELOPE1:
     .byte 1,4, -4,-1,-1,20,20,20, 1,0,0,0,1,1
 ENVELOPE2:
@@ -4596,13 +4611,13 @@ ENVELOPE3:
     .byte 3,1, 3,2,-2,6,6,6, 100,0,0,-5, 100,0
 ENVELOPE4:
     .byte 4,1, -15,-15,-15,240,240,240, 20,0,0,-20, 126,126
-
 DefHigh:
 		//hiscore_t[24]  Default high score
 	.byte $00,$10,$00,$41,$63,$6F,$72,$6E
 	.byte $73,$6F,$66,$74,$0D,$03,$06,$06
 	.byte $06,$06,$03,$03,$F3,$03,$0C,$0E
 
-	.fill $42,0
+	.fill $1A,0
 
 #import "0E00.asm"
+#import "RedefinedCharacters.asm"

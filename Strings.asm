@@ -1,9 +1,9 @@
 StringV_l:
 		//LSB of string pointers
-	.byte <string0,<string1,<string2,<string3,<string4,<string5,<string6
+	.byte <string0,<string1,<string2,<string3,<string4,<string5,<string6,<string7,<string8,<string9
 StringV_h:
 		//MSB of string pointers
-	.byte >string0,>string1,>string2,>string3,>string4,>string5,>string6
+	.byte >string0,>string1,>string2,>string3,>string4,>string5,>string6,>string7,>string8,>string9
 string0:
 		//Message string #0
 		//length,text clr,restore default pallete
@@ -63,3 +63,33 @@ string6:
 	.byte $74,$6F,$20,$70
 	.byte $6C,$61,$79,$20,$61,$67,$61,$69
 	.byte $6E
+
+string7:
+	.byte $3E,$1F,$00,$00
+	.byte $81,$9D,$83,$8D   //double height
+	.text "     Acornsoft planetoid"
+	.byte $1F,$00,$01
+	.byte $81,$9D,$83,$8D
+	.text "     Acornsoft planetoid"
+string8:	
+	.byte $73,$1F,$06,$03
+	.text "KEYS:"
+	.byte $1F,$11,$04
+	.text "A - UP"
+	.byte $1F,$11,$05
+	.text "Z - DOWN"
+	.byte $1F,$0D,$07
+	.text "SPACE - REVERSE"
+	.byte $1F,$0D,$09
+	.text "SHIFT - THRUST"
+	.byte $1F,$0C,$0A
+	.text "RETURN - FIRE"
+	.byte $1F,$0F,$0C
+	.text "TAB - SMART BOMB"
+	.byte $1F,$11,$0D
+	.text "H - HYPERSPACE"
+string9:	
+	.byte $3E,$1F,$05,$10
+	.text "Copyright (C) Acornsoft 1982"
+	.byte $1F,$05,$12
+	.text " Press SPACE BAR to continue"
