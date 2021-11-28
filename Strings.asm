@@ -16,25 +16,26 @@ string1:
 	.byte $E9,$EA
 		//cursor,(7,15)
 	.byte $1F,$07,$0F,$EB,$EC,$ED,$EE
-string2:
+string2://GAME  OVER(extended chars)
 		//Message string #2
 		//length,cursor,(7,15),txt clr #4
 	.byte $0B,$1F,$07,$0F,$11,$04,$EF,$F0
 	.byte $20,$20,$F1,$F2
-string3:
+string3://Planetoid Hall of Fame
 		//Message string #3
-		//length,mode,7,double height
-	.byte $1B,$16,$07
+		//length,mode,7,double height,green
+	.byte $1C,$16,$07
 	.byte $1F,$05,$00
+	.byte $82
 		//cursor,(5,0)
 		//Planetoid Hall of Fame
 	.byte $50,$6C,$61,$6E,$65,$74,$6F,$69
 	.byte $64,$20,$48,$61,$6C,$6C,$20,$6F
 	.byte $66,$20,$46,$61,$6D,$65
-string4:
+string4://Congratulations
 		//Message string #4
-		//length,cursor,(11,3)
-	.byte $24,$1F,$08,$03
+		//length,cursor,(11,3),green
+	.byte $25,$1F,$08,$03,$82
 		//Congratulations
 	.byte $43,$6F,$6E,$67,$72,$61,$74,$75
 	.byte $6C,$61,$74,$69,$6F,$6E,$73
@@ -51,7 +52,7 @@ string5:
 string6:
 		//Message string #6
 		//length,cursor,(10,3)
-	.byte $2B,$1F,$0A,$04
+	.byte $2C,$1F,$0A,$04,$82
 		//Today's Hi
 	.byte $54,$6F,$64,$61,$79,$27,$73,$20
 	.byte $48,$69
