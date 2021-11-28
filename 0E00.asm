@@ -61,6 +61,10 @@ imgBaiter:
 	.byte $CC,$C0,$CF,$CC
 	.byte $CC,$C0,$C5,$CC
 	.byte $00,$88,$CE,$88
+
+//five unused bytes
+	.byte $00,$00,$00,$00,$00
+
 	.byte $50,$E5,$76,$A8,$A2,$01,$A5,$76,$20,$73,$1D,$4C,$FB,$20,$68//$1088 fragment
 imgBomber:
 	.byte $51,$03,$06,$06,$06,$06,$03,$03,$F3,$03,$0C,$0E,$0E,$0C,$03,$03//$1094 bomber
