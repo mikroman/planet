@@ -60,12 +60,12 @@ imgMutant:
     .byte $00,$51,$CC,$CC,$44,$00,$44,$88,$0C,$0C,$51,$51,$F3,$D9,$51,$51
     .byte $88,$F6,$44,$44,$E6,$88,$44,$00,$00,$00,$88,$88,$00,$00,$00,$88
 imgBaiter:
-    .byte $00,$44,$89,$44
-    .byte $CC,$0D,$0D,$CC
-    .byte $CC,$06,$06,$CC
-    .byte $CC,$0B,$0B,$CC
-    .byte $00,$88,$4C,$88
-//five unused bytes
+	.byte $00,$44,$CD,$44
+	.byte $CC,$C0,$CA,$CC
+	.byte $CC,$C0,$CF,$CC
+	.byte $CC,$C0,$C5,$CC
+	.byte $00,$88,$CE,$88
+    //five unused bytes
     .byte $00,$00,$00,$00,$00
 //fragment
     .byte $50,$E5,$76,$A8,$A2,$01,$A5,$76,$20,$73,$1D,$4C,$FB,$20,$68

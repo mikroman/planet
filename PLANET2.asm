@@ -4607,7 +4607,7 @@ SetUpEnvelopes:
     rts
 		
 ENVELOPE1:
-    .byte 1,4,1
+    .byte 1,4,-4,-1,-1,20,20,20, 1,0,0,0,1,1
 ENVELOPE2:
     .byte 2,1, 2,2,2,20,20,20, 1,0,0,0,1,1
 ENVELOPE3:
