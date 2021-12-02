@@ -1,3 +1,5 @@
+#importonce
+
 // vi: syntax=asmM6502 ts=4 sw=4
 
 // Acornsoft Planetoid, BBC Micro

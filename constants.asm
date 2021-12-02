@@ -109,17 +109,3 @@
 .const HAL			=	(1 << 6)	//$40 hyper die
 .const BLAST		=	-1			//$ff
 //}//
-
-//@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-//Address equates
-.label SHEILA		=	$fe00
-.label ULAPALETTE	=	$fe21
-.label SYS6522		=	$fe40
-.label USR6522		=	$fe60
-.label OSRDCH		=	$ffe0
-.label OSWRCH		=	$ffee
-.label OSWORD		=	$fff1
-.label OSBYTE		=	$fff4
-.label IRQ1V		=	$204
-.label VRAM		    =	$3000

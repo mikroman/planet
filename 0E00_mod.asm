@@ -1,3 +1,5 @@
+.importonce
+
 * = $3100 "Relocated"
 
 .pseudopc $0E00 {

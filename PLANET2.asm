@@ -4523,14 +4523,12 @@ linkerr:
 #import "UnitData.asm"
 #import "relocater.asm"
 
-* = $3000 "BOOT"
+*=$3000 "BOOT"
 
 Boot:
-	lda #$8C		//perfom *TAPE
-	jsr OSWRCH
 	lda #$0F
 	jsr OSBYTE
-	jsr Relocate	//LINE 120 REM:FOR I% = 0 TO &2FC STEP4 :I%!&E00 = I%!&3100:NEXT
+	jsr Relocate
 	jsr SetUpEnvelopes
 	jsr RedefinedCharacters
 	lda #$ce
@@ -4596,7 +4594,9 @@ SetUpEnvelopes:
     ldy #>ENVELOPE2
     lda #$08
     jsr OSWORD
-    ldx #<ENVELOPE3
+    ldx #<ENVELOPE3 
+
+	//``````````````````````````````````````````````
     ldy #>ENVELOPE3
     lda #$08
     jsr OSWORD
@@ -4607,7 +4607,7 @@ SetUpEnvelopes:
     rts
 		
 ENVELOPE1:
-    .byte 1,4, -4,-1,-1,20,20,20, 1,0,0,0,1,1
+    .byte 1,4,1
 ENVELOPE2:
     .byte 2,1, 2,2,2,20,20,20, 1,0,0,0,1,1
 ENVELOPE3:

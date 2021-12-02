@@ -57,8 +57,8 @@ SpriteMaxY:
 SpriteLen:
 		//Sprite data lengths for:
 		//SHIP LAND MUT BAIT BOMB SWAR MAN POD
-	.byte $30,$20,$20,$14,$18,$0C,$08,$18
-	.byte $02,$28,$28
+	.byte $30, $20, $20,$14, $18, $0C, $08,$18
+	.byte $02, $28, $28
 		//KUGL S250 S500
 SpriteV_l:
 		//LB of vectors to sprite data
